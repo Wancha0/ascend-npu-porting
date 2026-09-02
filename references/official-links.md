@@ -1,0 +1,58 @@
+# Official and Primary References
+
+Use these links to resolve version, operator, precision, memory, and distributed
+questions. Prefer the document branch/version matching the installed runtime;
+do not apply commands from the newest page to an older CANN/torch_npu stack.
+Record the exact URL, branch/tag, and retrieval date in `NPU_PORTING.md`.
+
+## Ascend runtime and API sources
+
+- [TorchNPU repository and quick start](https://github.com/Ascend/pytorch):
+  source of truth for installation entrypoints, runtime behavior, issues, and
+  the implementation of `torch_npu`.
+- [TorchNPU version compatibility table](https://github.com/Ascend/pytorch/blob/master/COMPATIBILITY.en.md):
+  check the PyTorch, TorchNPU, CANN, Python, driver, and firmware tuple before
+  installing or replacing anything.
+- [TorchNPU Chinese documentation portal](https://www.hiascend.com/document/detail/zh/Pytorch/2610/index/index.html):
+  navigate from the matching installed version to native API support, custom
+  APIs, environment variables, model migration, troubleshooting, and release
+  notes. Change `2610` only after confirming the target documentation version.
+- [TorchNPU custom API reference](https://ascend.github.io/docs/sources/pytorch/api_doc.html):
+  inspect supported dtypes, shapes, layouts, products, and constraints for
+  NPU-specific operators.
+- [`transfer_to_npu` compatibility shim source](https://github.com/Ascend/pytorch/blob/master/torch_npu/contrib/transfer_to_npu.py):
+  read the actual monkey-patches before relying on CUDA-like attributes or API
+  rewrites. This is especially relevant to `.is_cuda` and CUDA-JIT routing.
+- [`PYTORCH_NPU_ALLOC_CONF` reference](https://github.com/Ascend/pytorch/blob/master/docs/zh/api/environment_variable/memory_management/PYTORCH_NPU_ALLOC_CONF.md):
+  consult only after measuring an actual allocator or fragmentation problem.
+- [HCCL process-group parameter example](https://github.com/Ascend/pytorch/blob/master/docs/zh/developer_notes/distributed/parameter_setting/setting_HCCL_communicator_parameter.md):
+  reference for explicit HCCL process-group configuration. Do not copy buffer
+  or timeout values without measuring the target topology.
+
+## Precision and framework semantics
+
+- [Ascend msProbe](https://github.com/Ascend/msprobe): official tool for
+  collecting and comparing CPU/GPU/NPU activations, gradients, and operator
+  precision when simple parity tests cannot locate the first divergence.
+- [PyTorch AMP documentation](https://docs.pytorch.org/docs/stable/amp.html):
+  reference for device-aware autocast and gradient-scaling semantics.
+- [PyTorch distributed documentation](https://docs.pytorch.org/docs/stable/distributed.html):
+  reference for process groups, collectives, rank/world-size semantics, and
+  cleanup. Use `hccl` where required by the installed TorchNPU stack.
+- [PyTorch DistributedDataParallel](https://docs.pytorch.org/docs/stable/generated/torch.nn.parallel.DistributedDataParallel.html):
+  reference for DDP construction, gradient buckets, unused parameters, and
+  optimizer interaction.
+
+## Source-project case studies
+
+- [DreamWAM source](https://github.com/hustvl/DreamWAM) and
+  [paper](https://arxiv.org/abs/2608.04996): useful for tracing a multi-encoder,
+  video/action training graph with Accelerate, custom preprocessing, and strict
+  checkpoint contracts.
+- [FastWAM source](https://github.com/yuantianyuan01/FastWAM): useful for
+  tracing Hydra configuration, DeepSpeed/torchrun entrypoints, optional compile
+  paths, VideoDiT/ActionDiT coupling, and evaluation workers.
+
+These projects are architectural examples, not universal NPU patches. Re-run
+static inventory and representative operator gates for every new repository and
+runtime tuple.
