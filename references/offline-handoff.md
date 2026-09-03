@@ -64,6 +64,11 @@ target results. Include only the directories needed by the project.
 - commands and positive gates for each validation stage;
 - explicit stop conditions and unverified assumptions.
 
+If performance is in scope, also include an exact baseline command, a bounded
+profile command, the frozen workload contract, one-command candidate toggles,
+rollback instructions, and a performance-evidence template. Never ask a remote
+operator to try an unordered list of tuning flags.
+
 Copy `references/official-links.md` into the bundle as `REFERENCES.md`. In
 `NPU_PORTING.md`, add a patch map with one row per logical change:
 
@@ -167,5 +172,8 @@ the top-level gate is absent, an artifact does not match its size/hash, or
 - Discovery JSON can prove only what its commands measured.
 - A bundle manifest proves code-bundle integrity, not model function.
 - Only returned evidence that passes validation can raise readiness level.
+- A performance claim additionally requires synchronized, repeated baseline and
+  candidate windows on the same workload plus finite/parity and checkpoint
+  checks. A trace or reduced memory number alone does not prove a speedup.
 - If no evidence returns, state the strongest locally proven result and list
   the exact operator commands still required.

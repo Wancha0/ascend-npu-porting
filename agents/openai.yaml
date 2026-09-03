@@ -1,4 +1,4 @@
 interface:
   display_name: "Ascend NPU Porting"
-  short_description: "Adapt PyTorch code and validate it on Ascend NPU"
-  default_prompt: "Use $ascend-npu-porting to adapt this PyTorch codebase for Ascend NPU and leave reproducible code-validation gates."
+  short_description: "Port, validate, and tune PyTorch on Ascend NPU"
+  default_prompt: "Use $ascend-npu-porting to adapt this PyTorch codebase for Ascend NPU, prove the requested readiness gates, and profile or tune training performance when requested."

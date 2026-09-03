@@ -132,3 +132,12 @@ Record a JSON object with:
 
 `validate_evidence.py` validates the common envelope. Project-specific checks
 should add fields rather than weakening the required envelope.
+
+## Post-readiness performance gate
+
+Do not mix functional bring-up and performance tuning. Once the readiness level
+required by the user passes, use
+[training-performance.md](training-performance.md) to establish a frozen
+baseline, profile the dominant bottleneck, run controlled A/B changes, and
+validate scaling. A maximum-fit batch, lower peak HBM, or a short trace is not
+by itself proof of better training throughput.

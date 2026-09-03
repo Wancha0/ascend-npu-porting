@@ -1,6 +1,6 @@
 ---
 name: ascend-npu-porting
-description: Adapt and validate PyTorch or model-serving code for Huawei Ascend NPU with torch_npu/CANN. Use for CUDA-to-NPU source changes, operator/dtype/device routing, NPU training or serving reviews, HCCL/DDP debugging, or offline code handoff when the target cannot run Codex. Focus on code and runtime; do not use for OBS/data-transfer work or ordinary CUDA optimization without an Ascend target.
+description: Adapt, validate, profile, and tune PyTorch or model-serving code for Huawei Ascend NPU with torch_npu/CANN. Use for CUDA-to-NPU source changes, operator/dtype/device routing, NPU training or serving reviews, HCCL/DDP debugging, post-port training throughput or memory optimization, scaling analysis, or offline code handoff when the target cannot run Codex. Focus on code and runtime; do not use for OBS/data-transfer work or ordinary CUDA optimization without an Ascend target.
 ---
 
 # Ascend NPU Porting
@@ -29,6 +29,9 @@ possible.
 
 For training or multi-card work, read
 [references/training-readiness.md](references/training-readiness.md). For
+maximum-batch, throughput, step-time, memory, profiling, or scaling work after
+the relevant readiness gate passes, also read
+[references/training-performance.md](references/training-performance.md). For
 inference servers, generation pipelines, or parallel serving engines, read
 [references/serving-readiness.md](references/serving-readiness.md). For
 CUDA-only kernels, dtype failures, Accelerate, or optimizer memory issues, read
@@ -51,6 +54,11 @@ Record the following from evidence rather than assumption:
 - optional CUDA extensions, Triton/xFormers/FlashAttention paths, compile/JIT
   paths, and their eager or portable fallbacks;
 - HBM, host-memory, disk, and time constraints.
+
+For a performance target, also freeze the optimization objective, workload,
+precision, effective batch, accumulation, sequence/resolution, topology, data
+path, optimizer, and checkpoint cadence. Otherwise a faster number may describe
+a different training job rather than an improvement.
 
 When the target is unreachable, package `scripts/probe_ascend_runtime.py` and
 `scripts/scan_npu_risks.py` for the operator to run. Do not select package
@@ -81,6 +89,9 @@ versions, topology, or memory strategy from a different server's history.
 9. Stop on the first new OOM, HCCL failure, non-finite value, traceback, or
    contract mismatch. Inspect state before retrying; do not mutate knobs at
    random.
+10. Establish correctness and readiness before tuning. Change one logical
+    variable at a time, keep a rollback, and claim a performance improvement
+    only from synchronized, repeatable A/B measurements on the same contract.
 
 ## Work in escalating gates
 
@@ -95,6 +106,8 @@ Use the smallest gate capable of disproving the next claim:
 7. two-rank collective or DDP smoke;
 8. intended single-node topology, then intended multi-node topology;
 9. bounded end-to-end task with actual inputs and outputs.
+10. optional bounded performance profile, controlled A/B tuning, and scaling
+    validation after the requested readiness level has passed.
 
 Do not jump to a full model or all cards to diagnose an import, operator, or
 single-rank memory problem. Conversely, do not call a project train-ready after
@@ -114,6 +127,9 @@ Adapt the list to the repository, but normally leave:
   expected gates, official reference links, cleanup, and known limitations;
 - machine-readable evidence containing source revision, patch hashes, runtime
   versions, exercised code paths, topology, metrics, artifacts, and failures.
+- for performance work, a baseline-versus-final report containing the frozen
+  workload, warmup/measurement windows, repeat runs, throughput/step-time/HBM,
+  bottleneck attribution, accepted and rejected changes, and rollback paths.
 
 Run `scripts/manifest.py create` for an offline code-handoff bundle, then
 `scripts/manifest.py verify` at the destination. Run
@@ -130,6 +146,11 @@ Run `scripts/manifest.py create` for an offline code-handoff bundle, then
   checkpoint reload on the intended single-node process count.
 - Say **distributed-training-ready** only after the intended HCCL/DDP topology,
   optimizer update, save, strict reload, and resume all pass.
+- Say **performance-profiled** only after a bounded trace on the intended
+  workload attributes the dominant time or memory costs.
+- Say **performance-tuned** only after a repeatable improvement over a frozen
+  baseline, finite/parity checks, stable optimizer steps on the target
+  topology, and checkpoint reload. Never use this label to mean “optimal.”
 
 If a prerequisite is missing, report the strongest proven level and the exact
 remaining blocker. Never convert “likely” into a pass gate.

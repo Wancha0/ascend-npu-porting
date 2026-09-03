@@ -106,6 +106,12 @@ Recommended order:
 11. target multi-node topology;
 12. bounded end-to-end task.
 
+If the user also requests training-performance work, begin the separate
+[training-performance workflow](training-performance.md) only after the
+corresponding functional and topology gate passes. Do not fold compilation
+warmup, OOM search attempts, or profiler overhead into the steady-state
+baseline.
+
 A gate must fail on non-finite tensors, missing ranks, unexpected fallback,
 wrong shapes, missing artifact, or stale artifact provenance—not only on a
 Python exception.

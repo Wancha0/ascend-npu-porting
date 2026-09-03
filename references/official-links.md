@@ -29,6 +29,20 @@ Record the exact URL, branch/tag, and retrieval date in `NPU_PORTING.md`.
   reference for explicit HCCL process-group configuration. Do not copy buffer
   or timeout values without measuring the target topology.
 
+## Profiling and performance sources
+
+- [Ascend msProf quick start](https://www.hiascend.com/document/detail/en/mindstudio/2600/TITools/msProf/docs/en/getting_started/quick_start.md):
+  official collection workflow for host and device performance traces. Use the
+  documentation version matching the installed toolkit.
+- [msprof-analyze quick start](https://github.com/Ascend/msprof-analyze/blob/master/docs/zh/quick_start/msprof-analyze_quick_start.md):
+  official analysis-tool entrypoint for collected profiling data.
+- [msprof-analyze operator MFU guidance](https://github.com/Ascend/msprof-analyze/blob/master/docs/en/advanced_features/operator_mfu_instruct.md):
+  reference for interpreting operator utilization; MFU is diagnostic evidence,
+  not a substitute for end-to-end throughput.
+- [PyTorch profiler](https://docs.pytorch.org/docs/stable/profiler.html):
+  reference for scheduled traces, activities, shapes, memory, and stack capture.
+  Confirm TorchNPU support in the installed version before enabling options.
+
 ## Precision and framework semantics
 
 - [Ascend msProbe](https://github.com/Ascend/msprobe): official tool for
