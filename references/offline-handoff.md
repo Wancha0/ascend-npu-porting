@@ -1,19 +1,43 @@
 # Offline Code Handoff Protocol
 
-Use this protocol when Codex cannot log in to the target or when execution must
-be performed by an operator. The goal is to replace an interactive debugging
-session with an explicit two-round exchange and machine-verifiable evidence.
+Use this protocol when the adapting agent cannot log in to the target or when
+execution must be performed by an operator. The goal is to replace an
+interactive debugging session with an explicit two-round exchange and
+machine-verifiable evidence. Do not rely on a particular agent product, hidden
+conversation state, MCP service, or proprietary tool call.
+
+## Make the toolkit portable first
+
+Clone or copy the complete toolkit, then run `python3 scripts/self_check.py`
+from its root. Record its Git revision or a manifest hash in every handoff. The
+portable runtime is Markdown plus Python 3 standard-library helpers;
+`probe_ascend_runtime.py` additionally requires the target's already-compatible
+PyTorch/TorchNPU/CANN environment.
+
+If the receiving agent will not have this repository, include
+`PORTABLE_AGENT_GUIDE.md`, `SKILL.md`, the relevant `references/`, and all
+needed `scripts/` under a `workflow/` directory in the bundle. Instructions
+must name ordinary shell commands, files, inputs, outputs, positive gates, and
+stop conditions. Product-specific metadata such as `agents/openai.yaml` is
+optional and must never be required for execution.
 
 ## Prefer two rounds
 
 ### Round 1: discovery
 
-Send only non-destructive discovery tools and exact commands. Ask the operator
-to return their raw JSON outputs and logs without editing them:
+Send only non-destructive discovery tools and exact commands. Fill in and
+verify absolute paths before sending them; do not assume the project contains
+the toolkit's `scripts/` directory. Ask the operator to return raw JSON outputs
+and logs without editing them:
 
 ```bash
-python3 scripts/probe_ascend_runtime.py --output evidence/runtime.json
-python3 scripts/scan_npu_risks.py . --output evidence/static-scan.json
+ASCEND_PORTING_KIT=/absolute/path/to/ascend-npu-porting
+PROJECT_ROOT=/absolute/path/to/project
+RUN_EVIDENCE=/absolute/path/to/unique-run/evidence
+python3 "${ASCEND_PORTING_KIT}/scripts/probe_ascend_runtime.py" \
+  --output "${RUN_EVIDENCE}/runtime.json"
+python3 "${ASCEND_PORTING_KIT}/scripts/scan_npu_risks.py" \
+  "${PROJECT_ROOT}" --output "${RUN_EVIDENCE}/static-scan.json"
 ```
 
 Also request:
@@ -44,6 +68,7 @@ npu-handoff-<project>-<run-id>/
   configs/
   scripts/
   probes/
+  workflow/
   evidence/
 ```
 
@@ -55,6 +80,7 @@ target results. Include only the directories needed by the project.
 `bundle.json` should record:
 
 - schema version, bundle ID, creation time, project, and target outcome;
+- toolkit source/revision or manifest hash and self-check result;
 - expected source repository and exact base revision;
 - supported operating-system/runtime tuple from discovery;
 - patch order and the SHA-256 of every patch;

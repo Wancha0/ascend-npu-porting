@@ -3,6 +3,11 @@
 Use this workflow as a decision sequence, not as permission to launch an
 expensive job. The user's target outcome determines the last required gate.
 
+When this toolkit was cloned, copied, or unpacked on another computer, run
+`python3 scripts/self_check.py` from the toolkit root and record the toolkit
+revision or manifest hash. This proves only that the portable instructions and
+helpers are intact; the target runtime still requires its own gates.
+
 ## 1. Freeze what is being adapted
 
 Capture the repository URL, commit, submodule revisions, dirty status, original

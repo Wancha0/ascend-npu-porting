@@ -1,6 +1,6 @@
 ---
 name: ascend-npu-porting
-description: Adapt, validate, profile, and tune PyTorch or model-serving code for Huawei Ascend NPU with torch_npu/CANN. Use for CUDA-to-NPU source changes, operator/dtype/device routing, NPU training or serving reviews, HCCL/DDP debugging, post-port training throughput or memory optimization, scaling analysis, or offline code handoff when the target cannot run Codex. Focus on code and runtime; do not use for OBS/data-transfer work or ordinary CUDA optimization without an Ascend target.
+description: Adapt, validate, profile, and tune PyTorch or model-serving code for Huawei Ascend NPU with torch_npu/CANN. Use for CUDA-to-NPU source changes, operator/dtype/device routing, NPU training or serving reviews, HCCL/DDP debugging, post-port training throughput or memory optimization, scaling analysis, or agent-independent offline code handoff when the adapting agent cannot access the target. Focus on code and runtime; do not use for OBS/data-transfer work or ordinary CUDA optimization without an Ascend target.
 ---
 
 # Ascend NPU Porting
@@ -15,11 +15,17 @@ distribution unless the user explicitly expands the scope. Record required
 local paths as prerequisites and continue with source adaptation wherever
 possible.
 
+This repository is an agent-neutral Markdown and Python toolkit. It must not
+depend on Codex, MCP, chat history, or a proprietary orchestration API to carry
+out the port. On another computer or with a different coding agent, begin with
+[PORTABLE_AGENT_GUIDE.md](PORTABLE_AGENT_GUIDE.md) and run
+`python3 scripts/self_check.py` before trusting a copied toolkit.
+
 ## Choose the operating mode
 
-- **Direct mode:** Codex can inspect and execute on the target. Follow the
+- **Direct mode:** The adapting agent can inspect and execute on the target. Follow the
   staged workflow in [references/porting-workflow.md](references/porting-workflow.md).
-- **Handoff mode:** Codex cannot reach the target, or only a human can run
+- **Handoff mode:** The adapting agent cannot reach the target, or only a human can run
   commands there. Also read
   [references/offline-handoff.md](references/offline-handoff.md) and create a
   self-contained, hash-manifested bundle instead of guessing target state.
@@ -60,9 +66,10 @@ precision, effective batch, accumulation, sequence/resolution, topology, data
 path, optimizer, and checkpoint cadence. Otherwise a faster number may describe
 a different training job rather than an improvement.
 
-When the target is unreachable, package `scripts/probe_ascend_runtime.py` and
-`scripts/scan_npu_risks.py` for the operator to run. Do not select package
-versions, topology, or memory strategy from a different server's history.
+When the target is unreachable, package the toolkit-root
+`scripts/probe_ascend_runtime.py` and `scripts/scan_npu_risks.py` for the
+operator to run. Do not select package versions, topology, or memory strategy
+from a different server's history.
 
 ## Non-negotiable invariants
 
@@ -130,9 +137,11 @@ Adapt the list to the repository, but normally leave:
 - for performance work, a baseline-versus-final report containing the frozen
   workload, warmup/measurement windows, repeat runs, throughput/step-time/HBM,
   bottleneck attribution, accepted and rejected changes, and rollback paths.
+- for a disconnected handoff, the exact toolkit revision or manifest plus all
+  relevant instructions and scripts; never require unrecorded chat context.
 
-Run `scripts/manifest.py create` for an offline code-handoff bundle, then
-`scripts/manifest.py verify` at the destination. Run
+From the toolkit root, run `scripts/manifest.py create` for an offline
+code-handoff bundle, then `scripts/manifest.py verify` at the destination. Run
 `scripts/validate_evidence.py` on evidence returned from a disconnected target.
 
 ## Completion language
