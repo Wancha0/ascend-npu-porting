@@ -82,6 +82,8 @@ target results. Include only the directories needed by the project.
 - schema version, bundle ID, creation time, project, and target outcome;
 - toolkit source/revision or manifest hash and self-check result;
 - expected source repository and exact base revision;
+- every additional source/launcher/overlay revision and the deterministic
+  composition order when the project spans repositories or branches;
 - supported operating-system/runtime tuple from discovery;
 - patch order and the SHA-256 of every patch;
 - changed files/symbols and the CPU/CUDA/NPU dispatch behavior after each

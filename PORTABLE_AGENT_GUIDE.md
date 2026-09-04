@@ -15,12 +15,21 @@ The Ascend target still needs its project dependencies, CANN/driver, and a
 compatible PyTorch/TorchNPU pair. Only `probe_ascend_runtime.py` imports
 `torch`/`torch_npu`; the scanner, manifest, evidence validator, and self-check
 are standard-library-only. No Codex service, MCP server, plugin, OBS access, or
-internet connection is required after the toolkit and project sources are
-present.
+internet connection is required after the toolkit, project sources, and
+required local artifacts are present. Checking whether checkpoints, cached
+features, and representative inputs exist locally is part of the code/runtime
+contract; acquiring or moving them is a separate operation outside this
+toolkit unless the user explicitly requests it.
 
 An agent without target access can prepare and statically check a patch bundle,
 but cannot truthfully claim runtime, training, serving, distributed, or
 performance readiness. Those claims require returned target evidence.
+
+“GLM” does not identify a single agent runtime. GLM can be the model behind
+several coding-agent hosts, each with different skill discovery, shell access,
+permissions, context limits, and remote-execution support. Read
+[references/glm-agent.md](references/glm-agent.md) before delegating this
+workflow to GLM.
 
 ## Bootstrap on a new computer
 
@@ -48,14 +57,18 @@ Give another agent the toolkit path, project path, and this prompt with the
 bracketed values filled in:
 
 ```text
-Read [TOOLKIT]/SKILL.md completely. Follow its routing instructions and read
-only the references needed for [training/inference/serving/performance] on
-[PROJECT]. Treat [SOURCE REVISION] and the dirty-worktree state as immutable
+Read [TOOLKIT]/SKILL.md completely, then read
+[TOOLKIT]/references/glm-agent.md if you are running on GLM. Follow its routing
+instructions and read only the references needed for
+[training/inference/serving/performance] on
+[PROJECT]. First map every repository, branch, patch, and launcher used by the
+requested command; freeze each revision and dirty-worktree state as immutable
 evidence. The target is [ASCEND TYPE/COUNT/TOPOLOGY] with the observed
 [PYTHON/PYTORCH/TORCH_NPU/CANN/DRIVER] tuple. Preserve CPU/CUDA behavior, do not
 replace the platform torch pair without an official compatibility match, and
-do not use OBS or transfer datasets/weights. Start with the toolkit self-check,
-runtime probe, static risk scan, and an execution-path map. Patch one failure
+do not transfer datasets/weights. You may inventory existing local artifact
+paths and record missing ones as blockers. Start with the toolkit self-check,
+runtime probe, a scope-limited static risk scan, and an execution-path map. Patch one failure
 category at a time; validate from imports and representative operators through
 the requested full-model and distributed gates. Leave NPU_PORTING.md, exact
 commands, positive gates, artifacts, hashes, rollback notes, and a validated
@@ -71,7 +84,8 @@ guessed from another server.
 ## Agent-independent execution sequence
 
 1. Run the toolkit self-check and record its revision or manifest.
-2. Freeze the source revision, dirty state, target outcome, runtime, topology,
+2. Freeze every source/branch/overlay revision and dirty state; draw how the
+   actual launcher composes them. Then freeze target outcome, runtime, topology,
    entrypoint, checkpoint contract, input shapes/dtypes/layouts, and resource
    limits.
 3. Run the target runtime probe and repository scanner using absolute paths:
@@ -84,9 +98,11 @@ guessed from another server.
      --output /absolute/path/to/run/evidence/static-scan.json
    ```
 
-4. Trace only the requested execution path. Classify dependencies and patch
-   the narrowest device, dtype, operator, import, optimizer, or distributed
-   incompatibility while preserving CPU/CUDA branches.
+4. Trace only the requested execution path across all source nodes. Treat the
+   scanner as an inventory, not a mechanical replacement queue. Classify
+   dependencies and patch the narrowest device, dtype, operator, import,
+   optimizer, or distributed incompatibility while preserving CPU/CUDA
+   branches.
 5. Validate in the gate order in `SKILL.md`. Use
    `references/training-readiness.md` or
    `references/serving-readiness.md` for the requested outcome.

@@ -20,6 +20,7 @@ REQUIRED = (
     "SKILL.md",
     "PORTABLE_AGENT_GUIDE.md",
     "references/compatibility-patterns.md",
+    "references/glm-agent.md",
     "references/official-links.md",
     "references/offline-handoff.md",
     "references/porting-workflow.md",

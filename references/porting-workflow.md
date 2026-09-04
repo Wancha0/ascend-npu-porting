@@ -10,10 +10,18 @@ helpers are intact; the target runtime still requires its own gates.
 
 ## 1. Freeze what is being adapted
 
-Capture the repository URL, commit, submodule revisions, dirty status, original
-launch commands, dependency lockfiles, required checkpoint interface, and
-expected outputs. Read project instructions and the model paper or architecture
-notes when they define tensor layouts, losses, or inference-only branches.
+Capture every repository URL, branch and commit, submodule revision, dirty
+status, overlay/patch, original launch command, dependency lockfile, required
+checkpoint interface, and expected output. Read project instructions and the
+model paper or architecture notes when they define tensor layouts, losses, or
+inference-only branches.
+
+Some projects are composites: the model library is on one branch while data
+preparation, launch, or evaluation lives on another. Draw a source graph whose
+nodes are immutable revisions and whose edges state whether a launcher imports,
+installs, patches, or reads artifacts from another node. Reconstruct and test
+that composition in a clean checkout. Never silently check out two branches
+over the same working tree or review only the branch named in the first URL.
 
 Separate contracts that are often accidentally conflated:
 
@@ -35,7 +43,8 @@ whether cards are already occupied. Probe git, the Python compiler toolchain,
 custom-extension compilers, and any serving/graphics runtime before relying on
 them.
 
-Run `scan_npu_risks.py` on the repository. Triage findings by execution path:
+Run `scan_npu_risks.py` on the smallest source roots that cover the requested
+execution path. Triage findings by execution path:
 an unused CUDA benchmark is not a blocker, while a CUDA-only attention kernel
 on the requested training path is.
 

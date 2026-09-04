@@ -66,6 +66,21 @@ Record the exact URL, branch/tag, and retrieval date in `NPU_PORTING.md`.
 - [FastWAM source](https://github.com/yuantianyuan01/FastWAM): useful for
   tracing Hydra configuration, DeepSpeed/torchrun entrypoints, optional compile
   paths, VideoDiT/ActionDiT coupling, and evaluation workers.
+- [ActionWM PAC DiffSynth branch](https://github.com/Zheng-Chong/ActionWM/tree/diffsynth-pac-controlnet)
+  and [ActionWM launcher/tools branch](https://github.com/Zheng-Chong/ActionWM/tree/minimax-h3-adaln):
+  a useful composite-source example in which the model-library changes and the
+  executable data/training/evaluation tools live on different branches.
+
+## GLM coding-agent sources
+
+- [Z.AI Coding Plan quick start](https://docs.z.ai/devpack/quick-start): official
+  setup entrypoint showing that GLM is used through multiple coding-agent hosts.
+- [Z.AI coding-tool integrations](https://docs.z.ai/devpack/tool/others):
+  official host-specific setup pages; use them to distinguish model access from
+  the host's file, shell, and editing capabilities.
+- [Official GLM skills repository](https://github.com/zai-org/GLM-skills):
+  primary example of portable directory skills with `SKILL.md`. Its presence
+  does not prove that every GLM host auto-discovers arbitrary local skills.
 
 These projects are architectural examples, not universal NPU patches. Re-run
 static inventory and representative operator gates for every new repository and

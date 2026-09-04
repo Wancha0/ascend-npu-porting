@@ -1,6 +1,6 @@
 ---
 name: ascend-npu-porting
-description: Adapt, validate, profile, and tune PyTorch or model-serving code for Huawei Ascend NPU with torch_npu/CANN. Use for CUDA-to-NPU source changes, operator/dtype/device routing, NPU training or serving reviews, HCCL/DDP debugging, post-port training throughput or memory optimization, scaling analysis, or agent-independent offline code handoff when the adapting agent cannot access the target. Focus on code and runtime; do not use for OBS/data-transfer work or ordinary CUDA optimization without an Ascend target.
+description: Adapt, validate, profile, and tune PyTorch or model-serving code for Huawei Ascend NPU with torch_npu/CANN. Use for CUDA-to-NPU source changes, operator/dtype/device routing, NPU training or serving reviews, HCCL/DDP debugging, post-port training throughput or memory optimization, scaling analysis, or agent-independent offline code handoff, including GLM-hosted coding agents. Focus on code and runtime; do not use for OBS/data-transfer work or ordinary CUDA optimization without an Ascend target.
 ---
 
 # Ascend NPU Porting
@@ -11,15 +11,21 @@ execution, and topology probes as separate gates; none alone proves that a
 model can train or serve.
 
 Do not spend the task on OBS, downloads, dataset synchronization, or weight
-distribution unless the user explicitly expands the scope. Record required
-local paths as prerequisites and continue with source adaptation wherever
-possible.
+distribution unless the user explicitly expands the scope. It is still valid
+to inventory whether required artifacts already exist locally, record their
+path/hash/interface contracts, and continue with source adaptation. Never turn
+that inventory into an unrequested transfer operation.
 
 This repository is an agent-neutral Markdown and Python toolkit. It must not
 depend on Codex, MCP, chat history, or a proprietary orchestration API to carry
 out the port. On another computer or with a different coding agent, begin with
 [PORTABLE_AGENT_GUIDE.md](PORTABLE_AGENT_GUIDE.md) and run
 `python3 scripts/self_check.py` before trusting a copied toolkit.
+When the acting model is GLM, or GLM is connected through Claude Code,
+OpenCode, OpenClaw, Cline, Roo Code, Cursor, or another host, also read
+[references/glm-agent.md](references/glm-agent.md). The host's tools and
+permissions—not the GLM model name—determine whether direct or handoff mode is
+possible.
 
 ## Choose the operating mode
 
@@ -50,7 +56,9 @@ for a human operator, read
 
 Record the following from evidence rather than assumption:
 
-- immutable source revision and the current dirty-worktree state;
+- immutable source revision and the current dirty-worktree state for every
+  repository, submodule, overlay, patch set, or branch that participates in the
+  requested execution path;
 - target outcome: import, inference, preprocessing, training, evaluation, or
   serving;
 - Python, PyTorch, torch_npu, CANN, driver, OS/kernel, NPU type/count, and
@@ -60,6 +68,12 @@ Record the following from evidence rather than assumption:
 - optional CUDA extensions, Triton/xFormers/FlashAttention paths, compile/JIT
   paths, and their eager or portable fallbacks;
 - HBM, host-memory, disk, and time constraints.
+
+When launchers, preprocessing, model code, and evaluation live in different
+repositories or branches, draw a source/execution graph before scanning or
+patching. Freeze every node to an immutable revision, record how nodes are
+composed, and test the composed checkout. A library branch without the launcher
+that consumes it is not a trainable project contract.
 
 For a performance target, also freeze the optimization objective, workload,
 precision, effective batch, accumulation, sequence/resolution, topology, data
@@ -104,7 +118,8 @@ from a different server's history.
 
 Use the smallest gate capable of disproving the next claim:
 
-1. static inventory, import graph, entrypoints, and dependency contract;
+1. static inventory, composed source graph, import graph, entrypoints, and
+   dependency contract;
 2. runtime probe and one BF16 forward/backward tensor operation;
 3. each changed component at representative shape/dtype/layout;
 4. strict checkpoint load and one real model forward;
