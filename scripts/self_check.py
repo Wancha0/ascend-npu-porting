@@ -7,6 +7,7 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -19,7 +20,9 @@ REQUIRED = (
     "README.md",
     "SKILL.md",
     "PORTABLE_AGENT_GUIDE.md",
+    "assets/training-job/torchrun_npu.sh",
     "references/compatibility-patterns.md",
+    "references/dependency-patch-delivery.md",
     "references/glm-agent.md",
     "references/official-links.md",
     "references/offline-handoff.md",
@@ -27,10 +30,13 @@ REQUIRED = (
     "references/serving-readiness.md",
     "references/training-performance.md",
     "references/training-readiness.md",
+    "references/training-job-lifecycle.md",
     "scripts/manifest.py",
     "scripts/probe_ascend_runtime.py",
     "scripts/scan_npu_risks.py",
+    "scripts/self_check.py",
     "scripts/validate_evidence.py",
+    "scripts/validate_patch_registry.py",
 )
 
 
@@ -51,6 +57,26 @@ def run(argv: list[str], expected_gate: str | None = None) -> str | None:
         return f"command failed ({result.returncode}): {' '.join(argv)}\n{combined[-2000:]}"
     if expected_gate is not None and expected_gate not in combined:
         return f"command omitted {expected_gate}: {' '.join(argv)}"
+    return None
+
+
+def run_expected_failure(argv: list[str], expected_text: str) -> str | None:
+    try:
+        result = subprocess.run(
+            argv,
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return f"cannot execute expected-failure check {argv[1]}: {exc}"
+    combined = result.stdout + result.stderr
+    if result.returncode == 0:
+        return f"command unexpectedly succeeded: {' '.join(argv)}"
+    if expected_text not in combined:
+        return f"failed command omitted {expected_text}: {' '.join(argv)}\n{combined[-2000:]}"
     return None
 
 
@@ -92,8 +118,14 @@ def fixture_errors() -> list[str]:
         "probe_ascend_runtime.py",
         "scan_npu_risks.py",
         "validate_evidence.py",
+        "validate_patch_registry.py",
     ):
         error = run([sys.executable, str(ROOT / "scripts" / name), "--help"])
+        if error:
+            errors.append(error)
+    bash = shutil.which("bash")
+    if bash is not None:
+        error = run([bash, "-n", str(ROOT / "assets/training-job/torchrun_npu.sh")])
         if error:
             errors.append(error)
     with tempfile.TemporaryDirectory(prefix="ascend-porting-self-check-") as raw_temp:
@@ -124,6 +156,11 @@ def fixture_errors() -> list[str]:
         payload_root = temp / "payload"
         payload_root.mkdir()
         (payload_root / "sample.txt").write_text("manifest fixture\n", encoding="utf-8")
+        (payload_root / ".git").mkdir()
+        (payload_root / ".git/config").write_text("private remote fixture\n", encoding="utf-8")
+        (payload_root / "__pycache__").mkdir()
+        (payload_root / "__pycache__/sample.pyc").write_bytes(b"cache fixture")
+        (payload_root / ".DS_Store").write_bytes(b"metadata fixture")
         manifest = temp / "MANIFEST.json"
         for argv, gate in (
             (
@@ -152,6 +189,103 @@ def fixture_errors() -> list[str]:
             error = run(argv, gate)
             if error:
                 errors.append(error)
+
+        if manifest.is_file():
+            manifest_payload = json.loads(manifest.read_text(encoding="utf-8"))
+            manifest_paths = {item.get("path") for item in manifest_payload.get("entries", [])}
+            forbidden = {".git/config", "__pycache__/sample.pyc", ".DS_Store"}
+            leaked = sorted(forbidden & manifest_paths)
+            if leaked:
+                errors.append(f"manifest included default-excluded paths: {leaked}")
+
+        unsafe_root = temp / "unsafe-symlink-payload"
+        unsafe_root.mkdir()
+        try:
+            (unsafe_root / "escape").symlink_to("../outside")
+        except OSError:
+            pass
+        else:
+            error = run_expected_failure(
+                [
+                    sys.executable,
+                    str(ROOT / "scripts/manifest.py"),
+                    "create",
+                    str(unsafe_root),
+                    "--output",
+                    str(temp / "unsafe-manifest.json"),
+                ],
+                "unsafe symlink target",
+            )
+            if error:
+                errors.append(error)
+
+        source_root = temp / "dependency-source"
+        source_file = source_root / "package/device.py"
+        source_file.parent.mkdir(parents=True)
+        source_file.write_text("DEVICE = 'cuda'\n", encoding="utf-8")
+        patch_bundle = temp / "patch-bundle"
+        patch_file = patch_bundle / "patches/demo/0001-device.patch"
+        patch_file.parent.mkdir(parents=True)
+        patch_file.write_text("fixture patch\n", encoding="utf-8")
+        patch_registry = {
+            "schema_version": 1,
+            "project": "self-check-fixture",
+            "libraries": [
+                {
+                    "name": "demo",
+                    "source": "https://example.invalid/demo.git",
+                    "base_revision": "0" * 40,
+                    "license_reference": "Apache-2.0",
+                    "target_kind": "source-checkout",
+                    "base_files": [
+                        {
+                            "path": "package/device.py",
+                            "sha256": hashlib.sha256(source_file.read_bytes()).hexdigest(),
+                        }
+                    ],
+                    "patches": [
+                        {
+                            "path": "patches/demo/0001-device.patch",
+                            "size_bytes": patch_file.stat().st_size,
+                            "sha256": hashlib.sha256(patch_file.read_bytes()).hexdigest(),
+                        }
+                    ],
+                    "apply": "git apply --check PATCH && git apply PATCH",
+                    "revert": "git apply --check -R PATCH && git apply -R PATCH",
+                    "validation_commands": ["python3 -m pytest tests/test_device.py"],
+                }
+            ],
+        }
+        registry_path = patch_bundle / "dependency-patches.json"
+        registry_path.write_text(json.dumps(patch_registry), encoding="utf-8")
+        error = run(
+            [
+                sys.executable,
+                str(ROOT / "scripts/validate_patch_registry.py"),
+                str(registry_path),
+                "--bundle-root",
+                str(patch_bundle),
+                "--source",
+                f"demo={source_root}",
+                "--require-base",
+            ],
+            "ASCEND_PATCH_REGISTRY_VALID",
+        )
+        if error:
+            errors.append(error)
+        patch_file.write_text("tampered fixture patch\n", encoding="utf-8")
+        error = run_expected_failure(
+            [
+                sys.executable,
+                str(ROOT / "scripts/validate_patch_registry.py"),
+                str(registry_path),
+                "--bundle-root",
+                str(patch_bundle),
+            ],
+            "ASCEND_PATCH_REGISTRY_INVALID",
+        )
+        if error:
+            errors.append(error)
 
         evidence_root = temp / "returned"
         log = evidence_root / "logs/smoke.log"

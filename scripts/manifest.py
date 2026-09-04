@@ -16,6 +16,28 @@ import tempfile
 from typing import Any, Iterable
 
 
+DEFAULT_EXCLUDES = (
+    ".git",
+    "*/.git",
+    ".hg",
+    "*/.hg",
+    ".svn",
+    "*/.svn",
+    "__pycache__",
+    "*/__pycache__",
+    ".mypy_cache",
+    "*/.mypy_cache",
+    ".pytest_cache",
+    "*/.pytest_cache",
+    ".ruff_cache",
+    "*/.ruff_cache",
+    "*.pyc",
+    "*.pyo",
+    ".DS_Store",
+    "*/.DS_Store",
+)
+
+
 def utc_now() -> str:
     return dt.datetime.now(dt.timezone.utc).isoformat().replace("+00:00", "Z")
 
@@ -43,6 +65,22 @@ def excluded(relative: str, patterns: Iterable[str]) -> bool:
     return any(fnmatch.fnmatch(relative, pattern) for pattern in patterns)
 
 
+def safe_symlink_target(relative: str, target: str) -> bool:
+    if not target or "\\" in target or PurePosixPath(target).is_absolute():
+        return False
+    parts = list(PurePosixPath(relative).parent.parts)
+    for part in PurePosixPath(target).parts:
+        if part in ("", "."):
+            continue
+        if part == "..":
+            if not parts:
+                return False
+            parts.pop()
+        else:
+            parts.append(part)
+    return True
+
+
 def inventory(
     root: Path, excludes: list[str], omitted_absolute: Path | None = None
 ) -> list[dict[str, Any]]:
@@ -58,11 +96,14 @@ def inventory(
                 continue
             if candidate.is_symlink():
                 info = candidate.lstat()
+                target = os.readlink(candidate)
+                if not safe_symlink_target(relative, target):
+                    raise ValueError(f"unsafe symlink target: {relative} -> {target}")
                 entries.append(
                     {
                         "path": relative,
                         "type": "symlink",
-                        "target": os.readlink(candidate),
+                        "target": target,
                         "mode": f"{stat.S_IMODE(info.st_mode):04o}",
                     }
                 )
@@ -81,11 +122,14 @@ def inventory(
                 pass
             info = path.lstat()
             if stat.S_ISLNK(info.st_mode):
+                target = os.readlink(path)
+                if not safe_symlink_target(relative, target):
+                    raise ValueError(f"unsafe symlink target: {relative} -> {target}")
                 entries.append(
                     {
                         "path": relative,
                         "type": "symlink",
-                        "target": os.readlink(path),
+                        "target": target,
                         "mode": f"{stat.S_IMODE(info.st_mode):04o}",
                     }
                 )
@@ -119,7 +163,13 @@ def parse_args() -> argparse.Namespace:
     create = subparsers.add_parser("create", help="create a manifest")
     create.add_argument("root", type=Path)
     create.add_argument("--output", type=Path, required=True)
-    create.add_argument("--exclude", action="append", default=[], metavar="GLOB")
+    create.add_argument(
+        "--exclude",
+        action="append",
+        default=[],
+        metavar="GLOB",
+        help="add an exclusion on top of VCS/cache defaults",
+    )
 
     verify = subparsers.add_parser("verify", help="verify a manifest")
     verify.add_argument("manifest", type=Path)
@@ -134,13 +184,18 @@ def create_manifest(args: argparse.Namespace) -> int:
     if not root.is_dir():
         print(f"not a directory: {root}", file=sys.stderr)
         return 2
-    entries = inventory(root, args.exclude, output)
+    excludes = list(dict.fromkeys([*DEFAULT_EXCLUDES, *args.exclude]))
+    try:
+        entries = inventory(root, excludes, output)
+    except (OSError, ValueError) as exc:
+        print(f"cannot inventory root: {exc}", file=sys.stderr)
+        return 2
     payload = {
         "schema_version": 1,
         "generated_at": utc_now(),
         "root_name": root.name,
         "hash_algorithm": "sha256",
-        "excludes": args.exclude,
+        "excludes": excludes,
         "entry_count": len(entries),
         "total_file_bytes": sum(item.get("size_bytes", 0) for item in entries),
         "entries": entries,
@@ -218,6 +273,8 @@ def verify_manifest(args: argparse.Namespace) -> int:
                 errors.append(f"type mismatch {relative}: expected symlink")
                 continue
             target = os.readlink(path)
+            if not safe_symlink_target(relative, target):
+                errors.append(f"unsafe symlink target {relative}: {target}")
             if item.get("target") != target:
                 errors.append(f"symlink target mismatch {relative}")
         else:
@@ -233,7 +290,7 @@ def verify_manifest(args: argparse.Namespace) -> int:
             actual_paths = {item["path"] for item in actual_entries}
             for relative in sorted(actual_paths - expected_paths):
                 errors.append(f"unexpected path: {relative}")
-        except OSError as exc:
+        except (OSError, ValueError) as exc:
             errors.append(f"cannot enumerate extra paths: {exc}")
 
     result = {

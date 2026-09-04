@@ -101,6 +101,11 @@ the full model.
 
 ## Launch and monitoring contract
 
+For job-package creation, scheduler submission, status, stop, or resume, follow
+[training-job-lifecycle.md](training-job-lifecycle.md) in addition to this
+readiness evidence. Generating launcher files does not authorize creating a
+remote or paid job.
+
 Launchers should reject invalid counts/ranks, stale output directories, reused
 ports, missing input/checkpoint paths, and ambiguous master addresses. Each run
 gets a unique run ID, log directory, PID/process-group record, output directory,

@@ -77,9 +77,11 @@ Never overwrite one branch with another to make a synthetic checkout. Scan only
 the nodes and paths reachable from the requested entrypoint; repository-wide
 CUDA matches are an inventory, not a to-do list.
 
-## ActionWM PAC ControlNet test case
+## ActionWM PAC ControlNet audit case
 
-The ActionWM example demonstrates why this gate is mandatory:
+The ActionWM example supplied during the toolkit audit demonstrates why this
+gate is mandatory. Treat the following revisions as evidence for that audit,
+not as a promise that the external repository remains publicly accessible:
 
 - `diffsynth-pac-controlnet` at audit revision
   `8998f3746c51637feaef2f490765773d17cd8fdc` is the modified DiffSynth library.
@@ -114,6 +116,12 @@ these first-order blockers before broad edits:
 6. Validate data-cache generation separately from training, then one real
    optimizer update, save/strict reload/resume, two-rank HCCL, and only then the
    intended topology.
+
+If the port changes installed libraries, GLM must use
+`dependency-patch-delivery.md` and leave small hash-guarded deltas rather than a
+copy of `site-packages`. If it must create or operate a training job, it must use
+`training-job-lifecycle.md` and distinguish preparing files from authorized
+submission.
 
 With repository access but no Ascend target or artifacts, GLM can produce a
 reviewed **prepared** patch bundle. With a shell-capable host, both source

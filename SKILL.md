@@ -41,8 +41,10 @@ possible.
 
 For training or multi-card work, read
 [references/training-readiness.md](references/training-readiness.md). For
-maximum-batch, throughput, step-time, memory, profiling, or scaling work after
-the relevant readiness gate passes, also read
+creating, submitting, monitoring, stopping, or resuming a training job, also
+read [references/training-job-lifecycle.md](references/training-job-lifecycle.md).
+For maximum-batch, throughput, step-time, memory, profiling, or scaling work
+after the relevant readiness gate passes, also read
 [references/training-performance.md](references/training-performance.md). For
 inference servers, generation pipelines, or parallel serving engines, read
 [references/serving-readiness.md](references/serving-readiness.md). For
@@ -51,6 +53,10 @@ CUDA-only kernels, dtype failures, Accelerate, or optimizer memory issues, read
 When selecting versions, checking API/operator support, or writing a handoff
 for a human operator, read
 [references/official-links.md](references/official-links.md).
+When changes extend into editable dependency checkouts, `site-packages`,
+framework forks, or binary extensions, read
+[references/dependency-patch-delivery.md](references/dependency-patch-delivery.md)
+and deliver reconstructable, hash-guarded deltas rather than copied libraries.
 
 ## Establish the contract before changing code
 
@@ -101,6 +107,8 @@ from a different server's history.
 5. Preserve the installed torch/torch_npu/CANN tuple until the official
    compatibility table proves a replacement. Put extra dependencies in a
    separate NPU constraints file so a generic installer cannot replace torch.
+   Do not publish complete dependency trees, environment directories, runtime
+   binaries, weights, datasets, caches, or credentials as an adaptation.
 6. Centralize device, autocast, synchronize, seed, and memory helpers. Avoid
    global monkey-patches and mechanical `cuda -> npu` replacement.
 7. A code gate succeeds only when it exits zero, emits its expected positive
@@ -140,11 +148,17 @@ only a tiny model smoke.
 Adapt the list to the repository, but normally leave:
 
 - scoped source patches with upstream CUDA/CPU behavior preserved;
+- for changes outside the main project, a per-library patch registry with
+  upstream revision, license reference, pristine file hashes, ordered patch
+  hashes, validation commands, and rollback;
 - a target-aware device/runtime helper or equivalent centralized logic;
 - NPU dependency constraints that do not overwrite the platform torch pair;
 - per-change tests plus repeatable import, component, full-model, optimizer,
   and distributed gates;
 - an NPU launcher/config with explicit topology and effective-batch math;
+- when job creation is in scope, a scheduler-independent project launcher plus
+  any authorized platform adapter, preflight, status, scoped stop, and resume
+  contracts;
 - `NPU_PORTING.md` containing a patch map, runtime tuple, exact commands,
   expected gates, official reference links, cleanup, and known limitations;
 - machine-readable evidence containing source revision, patch hashes, runtime

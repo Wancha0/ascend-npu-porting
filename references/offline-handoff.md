@@ -60,6 +60,7 @@ Use the returned discovery data to build a versioned bundle. A useful layout is:
 ```text
 npu-handoff-<project>-<run-id>/
   bundle.json
+  dependency-patches.json
   MANIFEST.json
   NPU_PORTING.md
   REFERENCES.md
@@ -92,6 +93,11 @@ target results. Include only the directories needed by the project.
 - commands and positive gates for each validation stage;
 - explicit stop conditions and unverified assumptions.
 
+When any patch targets a dependency outside the main project, follow
+[dependency-patch-delivery.md](dependency-patch-delivery.md) and validate
+`dependency-patches.json` with `scripts/validate_patch_registry.py`. Do not put
+the modified dependency tree in the public bundle.
+
 If performance is in scope, also include an exact baseline command, a bounded
 profile command, the frozen workload contract, one-command candidate toggles,
 rollback instructions, and a performance-evidence template. Never ask a remote
@@ -114,6 +120,10 @@ Before delivery:
 4. Verify that manifest from a copied or unpacked bundle.
 5. Check the bundle for credentials, private keys, tokens, signed URLs, large
    weights, datasets, generated caches, and machine-specific absolute paths.
+
+`manifest.py` excludes common VCS metadata and caches by default. Additional
+project-specific build products or private paths still require explicit
+`--exclude` patterns and a manual disclosure review.
 
 At the destination, the runbook must verify the base revision and dirty state
 before applying patches. Use `git apply --check` before `git apply`. If the

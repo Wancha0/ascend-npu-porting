@@ -56,6 +56,12 @@ Record the exact URL, branch/tag, and retrieval date in `NPU_PORTING.md`.
 - [PyTorch DistributedDataParallel](https://docs.pytorch.org/docs/stable/generated/torch.nn.parallel.DistributedDataParallel.html):
   reference for DDP construction, gradient buckets, unused parameters, and
   optimizer interaction.
+- [PyTorch `torchrun` documentation](https://docs.pytorch.org/docs/stable/elastic/run.html):
+  primary reference for standalone and multi-node launcher arguments, rank
+  environment, rendezvous, and failure behavior.
+- [Accelerate NPU guide](https://huggingface.co/docs/accelerate/usage_guides/npu):
+  framework-maintained NPU setup guidance. Confirm its release matches the
+  installed Accelerate and TorchNPU tuple before generating a job config.
 
 ## Source-project case studies
 
@@ -66,10 +72,11 @@ Record the exact URL, branch/tag, and retrieval date in `NPU_PORTING.md`.
 - [FastWAM source](https://github.com/yuantianyuan01/FastWAM): useful for
   tracing Hydra configuration, DeepSpeed/torchrun entrypoints, optional compile
   paths, VideoDiT/ActionDiT coupling, and evaluation workers.
-- [ActionWM PAC DiffSynth branch](https://github.com/Zheng-Chong/ActionWM/tree/diffsynth-pac-controlnet)
-  and [ActionWM launcher/tools branch](https://github.com/Zheng-Chong/ActionWM/tree/minimax-h3-adaln):
-  a useful composite-source example in which the model-library changes and the
-  executable data/training/evaluation tools live on different branches.
+
+The GLM guide also records an audited ActionWM composite-source snapshot. It is
+an illustrative failure pattern, not an availability dependency or an
+authoritative source link; the public workflow must remain usable when that
+external repository or its branches are unavailable.
 
 ## GLM coding-agent sources
 

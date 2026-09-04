@@ -68,9 +68,10 @@ evidence. The target is [ASCEND TYPE/COUNT/TOPOLOGY] with the observed
 replace the platform torch pair without an official compatibility match, and
 do not transfer datasets/weights. You may inventory existing local artifact
 paths and record missing ones as blockers. Start with the toolkit self-check,
-runtime probe, a scope-limited static risk scan, and an execution-path map. Patch one failure
-category at a time; validate from imports and representative operators through
-the requested full-model and distributed gates. Leave NPU_PORTING.md, exact
+runtime probe, a scope-limited static risk scan, and an execution-path map.
+Patch one failure category at a time; validate from imports and representative
+operators through the requested full-model and distributed gates. Leave
+NPU_PORTING.md, exact
 commands, positive gates, artifacts, hashes, rollback notes, and a validated
 evidence envelope. If the target is unreachable, prepare the two-round bundle
 in references/offline-handoff.md and label it prepared rather than validated.
@@ -103,11 +104,16 @@ guessed from another server.
    dependencies and patch the narrowest device, dtype, operator, import,
    optimizer, or distributed incompatibility while preserving CPU/CUDA
    branches.
+   If a dependency outside the main project changes, follow
+   `references/dependency-patch-delivery.md` and validate its patch registry.
 5. Validate in the gate order in `SKILL.md`. Use
    `references/training-readiness.md` or
    `references/serving-readiness.md` for the requested outcome.
 6. Only after correctness and topology readiness, use
    `references/training-performance.md` for performance work.
+   For training-job creation or operation, use
+   `references/training-job-lifecycle.md`; preparing files does not authorize
+   submission, resource allocation, or stopping a running job.
 7. Produce `NPU_PORTING.md`, scoped patches, exact launch/config files, logs,
    artifacts, hashes, rollback instructions, and JSON evidence. Validate the
    returned envelope with `scripts/validate_evidence.py`.
@@ -117,6 +123,11 @@ When the editing agent and target executor are separate, follow
 directory, environment initialization, absolute inputs/outputs, expected gate,
 timeout, stop condition, and cleanup target. No step may depend on remembered
 chat content.
+
+The public/code handoff contains deltas and reconstruction metadata. Keep
+complete dependency trees, virtual environments, CANN/driver trees, binaries,
+weights, datasets, caches, and secrets on authorized artifact channels rather
+than in the Git repository.
 
 ## Minimum acceptance matrix
 
