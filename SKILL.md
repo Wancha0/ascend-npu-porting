@@ -27,6 +27,11 @@ OpenCode, OpenClaw, Cline, Roo Code, Cursor, or another host, also read
 permissions—not the GLM model name—determine whether direct or handoff mode is
 possible.
 
+When the requested result is proof that another agent can complete the port
+independently, use [references/agent-validation.md](references/agent-validation.md).
+Ordinary porting does not require this experiment. A portable guide, helper
+self-check, or reviewer-written patch alone cannot establish agent independence.
+
 ## Choose the operating mode
 
 - **Direct mode:** The adapting agent can inspect and execute on the target. Follow the

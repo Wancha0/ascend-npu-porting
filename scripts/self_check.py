@@ -21,6 +21,7 @@ REQUIRED = (
     "SKILL.md",
     "PORTABLE_AGENT_GUIDE.md",
     "assets/training-job/torchrun_npu.sh",
+    "references/agent-validation.md",
     "references/compatibility-patterns.md",
     "references/dependency-patch-delivery.md",
     "references/glm-agent.md",

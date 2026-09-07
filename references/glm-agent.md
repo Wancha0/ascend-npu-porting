@@ -4,6 +4,11 @@ Use this reference when GLM is the model executing the port. The NPU workflow
 and evidence gates do not change; this file only makes the agent-host contract
 explicit.
 
+For a requested independent-execution experiment, also read
+[agent-validation.md](agent-validation.md). Its fresh replay and intervention
+record distinguish an independently completed port from an assisted development
+run. Host compatibility has to be tested on the intended deployment host.
+
 ## Distinguish the model from the host
 
 GLM can run behind Claude Code, OpenCode, OpenClaw, Cline, Roo Code, Kilo Code,
@@ -77,11 +82,22 @@ Never overwrite one branch with another to make a synthetic checkout. Scan only
 the nodes and paths reachable from the requested entrypoint; repository-wide
 CUDA matches are an inventory, not a to-do list.
 
+Rebuild this graph from the pinned source revision on every new experiment.
+A historical example may have split launchers across branches that a later
+revision consolidates. Check current paths and imports before adding another
+checkout. Re-read checkpoint, cache, and audio/token contracts when the source
+changes; a previously valid cache can encode a different execution contract.
+
 ## ActionWM PAC ControlNet audit case
 
 The ActionWM example supplied during the toolkit audit demonstrates why this
 gate is mandatory. Treat the following revisions as evidence for that audit,
 not as a promise that the external repository remains publicly accessible:
+
+This is a historical audit, not a current checkout recipe. The source revisions
+below establish only their own layout and behavior. For newer revisions,
+derive the source graph and contracts again; do not require two branches or
+silent audio merely because this example used them.
 
 - `diffsynth-pac-controlnet` at audit revision
   `8998f3746c51637feaef2f490765773d17cd8fdc` is the modified DiffSynth library.
@@ -94,8 +110,8 @@ not as a promise that the external repository remains publicly accessible:
 - The library already contains NPU device helpers and optional TorchNPU
   dependencies, but that does not prove this PAC training path.
 
-A capable GLM host should build and validate the composed project, then triage
-these first-order blockers before broad edits:
+At those audit revisions, a capable GLM host should build and validate the
+composed project, then triage these first-order blockers before broad edits:
 
 1. The recommended H20 path loads a pre-quantized bitsandbytes NF4 host. Treat
    it as CUDA-specific until a representative NPU load and forward proves
@@ -124,10 +140,11 @@ copy of `site-packages`. If it must create or operate a training job, it must us
 submission.
 
 With repository access but no Ascend target or artifacts, GLM can produce a
-reviewed **prepared** patch bundle. With a shell-capable host, both source
-branches, local weights/data, and target access, the skill gives GLM enough
-instructions to attempt and evidence an end-to-end port. It still cannot claim
-training readiness until the target gates pass.
+reviewed **prepared** patch bundle. With a shell-capable host, the complete
+source graph for the pinned revision, local weights/data, and target access,
+GLM can attempt and evidence an end-to-end port. This describes prerequisites,
+not a measured success rate. Training readiness and independent completion
+remain unproven until their respective target and replay gates pass.
 
 ## Prompt template for GLM
 

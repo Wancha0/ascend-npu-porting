@@ -31,6 +31,12 @@ permissions, context limits, and remote-execution support. Read
 [references/glm-agent.md](references/glm-agent.md) before delegating this
 workflow to GLM.
 
+To substantiate an independent-agent claim, also use
+[references/agent-validation.md](references/agent-validation.md). Record the
+actual GLM model and host, keep reviewer interventions visible, and validate a
+fresh replay. A run using a different host supports only that tested host;
+it does not establish execution on the user's GLM-only computer.
+
 ## Bootstrap on a new computer
 
 Clone the repository or copy the whole directory without dropping
