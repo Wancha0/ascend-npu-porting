@@ -48,6 +48,35 @@ explicitly instruct it to read `SKILL.md`, this file, and every routed reference
 in full. Do not translate the workflow into host-only tool names or assume MCP,
 plugins, or Codex metadata.
 
+## Portable shell and diagnostic output
+
+Check the controller's actual shell. A Linux target does not make the local
+shell Bash. Put multi-line orchestration in a script, run `bash -n SCRIPT`,
+then execute it explicitly with Bash or send it to `ssh ... 'bash -s'` through
+stdin. Use argument arrays for dynamic values and nested SSH. Avoid reserved
+variable names such as zsh's `status`; use `gate_exit` or `probe_exit`. Bash
+`PIPESTATUS` is not portable to zsh. Capture command output to a unique log and
+save its exit code before any subsequent command changes it. Keep failed
+attempts rather than overwriting their logs on retry.
+
+Read one document or a bounded line range per tool call, sized to the host's
+output limit. If a result is truncated, read the missing ranges; do not keep
+concatenating all references into another truncated result.
+
+Diagnostics must not collect credentials incidentally. For broad process
+inventory use fields such as `pid,ppid,user,stat,etime,comm`; omit `args` and
+`command`. Jupyter and other services can carry authentication tokens in their
+command line. Do not dump `env`, `/proc/*/environ`, credential files, or full
+command lines. Query only named non-secret topology variables. If a specific
+owned process needs more detail, filter sensitive fields before storing or
+returning its output, not after sending the log to the model. Public evidence
+must be reviewed and redacted independently of its validity/hash checks.
+
+Probe the type of metadata paths before using them: a rank-table environment
+variable may point to a directory rather than a JSON file. Treat missing
+optional discovery inputs as such; mandatory identity/runtime failures must
+not be hidden by a final echo or an unrelated command that exits zero.
+
 ## Keep long work resumable
 
 GLM must store progress in the run directory rather than relying on chat
