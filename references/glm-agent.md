@@ -94,10 +94,33 @@ memory. Maintain a small ledger containing:
 - changed files and why each change exists;
 - current failure, next smallest gate, and rollback.
 
+Update the ledger after each completed logical gate and before a long-running
+operation. For an active operation, record the owned process/session identity,
+destination, log, and completion check before waiting. Keep full logs on disk;
+return the exit status, gate, and relevant error excerpt to the model. Batch
+independent read-only probes, and restrict source scans to the executed path.
+These reduce repeated context without weakening the actual tests.
+
 After any context reset, re-read `SKILL.md`, the routed references, and this
 ledger before acting. Re-probe mutable target state such as free devices,
 processes, ports, IP addresses, and local paths. Do not repeat a mutation merely
 because the preceding chat is missing.
+
+If the ledger predates the final tool calls, reconcile it with the raw events
+and expected artifacts first. A reviewer-written continuation note must identify
+its author and evidence; it is not a GLM-authored ledger or a passed gate. Reuse
+unchanged, previously verified original assets with their verification records;
+check identity/existence and rehash if they changed or integrity is uncertain.
+Do not download or hash the same large files again solely because a session
+ended. A prepared archive is not evidence that the target received it.
+
+When a provider rejects a request for quota, preserve the raw error and stop
+the failed agent session. Distinguish account balance, resource packages,
+endpoint entitlement, and transient rate limits from current evidence. An old
+balance page or the absence of a subscription alone does not diagnose the
+failure. Do not loop paid probes after a current zero balance is confirmed.
+Continue from the saved state once access is restored; do not switch the
+adapting model or buy credit without user authorization.
 
 ## Composite-source rule
 
