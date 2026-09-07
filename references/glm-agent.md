@@ -9,6 +9,11 @@ For a requested independent-execution experiment, also read
 record distinguish an independently completed port from an assisted development
 run. Host compatibility has to be tested on the intended deployment host.
 
+When the user authorizes reuse of earlier MiniMax-H3 experience, also read
+[minimax-h3-lessons.md](minimax-h3-lessons.md). Record that input in the experiment
+contract and map each reused lesson to current source and tests. This permission
+does not turn an earlier model's results into current acceptance evidence.
+
 ## Distinguish the model from the host
 
 GLM can run behind Claude Code, OpenCode, OpenClaw, Cline, Roo Code, Kilo Code,

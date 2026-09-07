@@ -32,6 +32,11 @@ independently, use [references/agent-validation.md](references/agent-validation.
 Ordinary porting does not require this experiment. A portable guide, helper
 self-check, or reviewer-written patch alone cannot establish agent independence.
 
+For authorized reuse of prior MiniMax-H3 work, read
+[references/minimax-h3-lessons.md](references/minimax-h3-lessons.md). It separates
+historical inference/training operator results from the current model's gates;
+do not copy a past multi-card serving configuration into a single-card task.
+
 ## Choose the operating mode
 
 - **Direct mode:** The adapting agent can inspect and execute on the target. Follow the

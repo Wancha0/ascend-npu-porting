@@ -25,6 +25,7 @@ REQUIRED = (
     "references/compatibility-patterns.md",
     "references/dependency-patch-delivery.md",
     "references/glm-agent.md",
+    "references/minimax-h3-lessons.md",
     "references/official-links.md",
     "references/offline-handoff.md",
     "references/porting-workflow.md",
