@@ -71,6 +71,13 @@ schema and provenance. Preserve raw output before optional CPU postprocessing;
 if postprocessing fails, resume from the validated raw artifact rather than
 rerunning the expensive NPU stage.
 
+Check floating model outputs or latents before clipping, integer conversion,
+or media encoding; finite checks on `uint8` pixels cannot prove numerical
+validity of the floating computation. Record where each check ran. Verify an
+encoded video's full frame count by decoding to EOF or using a reliable frame
+counter; successfully reading the first N frames proves only that at least N
+frames are readable.
+
 Hash the request, generation config, model/adapters, raw output, final output,
 and logs. File integrity does not replace these functional gates.
 
