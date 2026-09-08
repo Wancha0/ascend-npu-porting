@@ -21,6 +21,10 @@ must name ordinary shell commands, files, inputs, outputs, positive gates, and
 stop conditions. Product-specific metadata such as `agents/openai.yaml` is
 optional and must never be required for execution.
 
+If a command uses SSH, include the bundled `scripts/ssh_script.py` and
+[ssh-execution.md](ssh-execution.md) with its verified invocation. Do not point
+the receiving agent at a helper inside the author's home or skill directory.
+
 ## Prefer two rounds
 
 ### Round 1: discovery

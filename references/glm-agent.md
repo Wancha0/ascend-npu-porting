@@ -56,9 +56,14 @@ plugins, or Codex metadata.
 ## Portable shell and diagnostic output
 
 Check the controller's actual shell. A Linux target does not make the local
-shell Bash. Put multi-line orchestration in a script, run `bash -n SCRIPT`,
-then execute it explicitly with Bash or send it to `ssh ... 'bash -s'` through
-stdin. Use argument arrays for dynamic values and nested SSH. Avoid reserved
+shell Bash. Put multi-line orchestration in a script and execute it explicitly
+with Bash after `bash -n SCRIPT`. For remote execution, use the bundled
+`scripts/ssh_script.py` following [ssh-execution.md](ssh-execution.md); it checks
+syntax and sends the script through stdin with argument-array SSH invocation.
+When Python generates a script, create its source file through the host's
+file-editing capability (for example, `apply_patch` when available), then run
+that file instead of nesting another heredoc inside a shell string.
+Use argument arrays for dynamic values and nested SSH. Avoid reserved
 variable names such as zsh's `status`; use `gate_exit` or `probe_exit`. Bash
 `PIPESTATUS` is not portable to zsh. Capture command output to a unique log and
 save its exit code before any subsequent command changes it. Keep failed

@@ -10,6 +10,8 @@ Python standard-library helpers.
 - For GLM, also use [references/glm-agent.md](references/glm-agent.md) to verify
   the host's actual capabilities and persistence behavior.
 - Verify a copied toolkit with `python3 scripts/self_check.py` before use.
+- For remote Bash, use the bundled SSH helper described in
+  [references/ssh-execution.md](references/ssh-execution.md).
 - To test independent execution by GLM, use
   [references/agent-validation.md](references/agent-validation.md) for a recorded
   development run, a fresh replay, and a second-model transfer test.

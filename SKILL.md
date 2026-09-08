@@ -27,6 +27,10 @@ OpenCode, OpenClaw, Cline, Roo Code, Cursor, or another host, also read
 permissions—not the GLM model name—determine whether direct or handoff mode is
 possible.
 
+For multiline remote Bash, use the bundled `scripts/ssh_script.py` and read
+[references/ssh-execution.md](references/ssh-execution.md). It validates locally
+and sends scripts through SSH stdin without a user-specific skill dependency.
+
 When the requested result is proof that another agent can complete the port
 independently, use [references/agent-validation.md](references/agent-validation.md).
 Ordinary porting does not require this experiment. A portable guide, helper
