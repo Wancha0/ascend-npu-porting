@@ -129,6 +129,11 @@ Before delivery:
 project-specific build products or private paths still require explicit
 `--exclude` patterns and a manual disclosure review.
 
+For authorized source or patch delivery using encoded payloads, also perform
+the local decode and byte-for-byte verification in
+[ssh-execution.md](ssh-execution.md) before transfer. A passed source manifest
+does not validate hand-transcribed payloads or file-size assertions added later.
+
 At the destination, the runbook must verify the base revision and dirty state
 before applying patches. Use `git apply --check` before `git apply`. If the
 checkout differs, stop and return evidence; do not force, reset, or overwrite

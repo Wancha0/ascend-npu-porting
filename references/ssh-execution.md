@@ -55,13 +55,24 @@ result = subprocess.run(
 gate_exit = result.returncode
 ```
 
+For an authorized source or patch transfer using an encoded payload, generate
+the payload, byte count, and SHA-256 mechanically from the exact source bytes.
+Derive old-file and replacement-file identities from their respective frozen
+files; do not hand-transcribe base64 or reconstruct sizes/hashes from memory.
+Before transfer, locally decode the final payload with the intended decoder,
+compare the decoded bytes with the source byte for byte, and recompute its size
+and hash. Verify the received bytes against that same generated record before
+applying them.
+
 Verify exact paths and the run identity before mutation. The helper preserves
 SSH's exit status and performs no retry, job scheduling, background launch, or
 artifact verification. A zero exit still needs the expected gate/artifact from
 the requested operation. After a failure or uncertain disconnect, inspect the
-owned process/session and artifacts before retrying. A connection timeout or
-keepalive interval is not a job runtime limit; apply the existing run contract's
-bound and stop conditions separately.
+owned process/session and artifacts before retrying. For a deployment failure,
+preserve the log and use a new attempt after correcting the evidenced cause;
+do not guess expected values or weaken identity checks to continue. A connection
+timeout or keepalive interval is not a job runtime limit; apply the existing run
+contract's bound and stop conditions separately.
 
 `python3 scripts/self_check.py` exercises this helper using a mocked SSH call
 and local fixture scripts when local Bash is available. It checks literal
