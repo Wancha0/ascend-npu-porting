@@ -89,9 +89,13 @@ returning its output, not after sending the log to the model. Public evidence
 must be reviewed and redacted independently of its validity/hash checks.
 
 Probe the type of metadata paths before using them: a rank-table environment
-variable may point to a directory rather than a JSON file. Treat missing
-optional discovery inputs as such; mandatory identity/runtime failures must
-not be hidden by a final echo or an unrelated command that exits zero.
+variable may point to a directory rather than a JSON file. Inspect the parsed
+JSON root and the producing code before assuming a mapping, list, or array;
+validate the actual schema instead of guessing wrapper keys. Check data API
+return types before array arithmetic, and preserve the failed validator's log
+when reusing an already-produced artifact. Treat missing optional discovery
+inputs as such; mandatory identity/runtime failures must not be hidden by a
+final echo or an unrelated command that exits zero.
 Parse manifests according to their schema: distinguish entries from documented
 comments and headers, reject malformed entries, and compare entry counts and
 file identities. Physical line count is not an artifact count.
