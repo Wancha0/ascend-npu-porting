@@ -31,6 +31,12 @@ previous run. Re-probe them immediately before submission. Reject a multi-node
 contract unless `world_size == nodes * processes_per_node` for pure data
 parallelism, or document how other parallel groups change that equation.
 
+Verify the interpreter used by the actual launcher and its child, not only a
+separate Python probe. A console script such as `accelerate` may retain another
+environment's shebang even when the intended environment can import it. Record
+the child's `sys.executable` and dependency locations; bind the launch to the
+verified interpreter before attributing an import failure to missing packages.
+
 ## Build the project launcher first
 
 The project launcher owns model/data arguments and must work independently of a
