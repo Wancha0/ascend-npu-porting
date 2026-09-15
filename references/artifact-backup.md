@@ -5,6 +5,10 @@ including successor jobs. A code review or short disposable operator test does
 not require a storage questionnaire. This defines retention decisions, not an
 OBS client implementation or permission to transfer assets.
 
+For authorized ModelArts transfers, use [obs-moxing.md](obs-moxing.md).
+Choose a single transfer owner per asset/destination; a platform output mapping
+and an explicit uploader must not unknowingly duplicate or overwrite each other.
+
 ## Prepare the choice
 
 Before asking, inspect the actual output paths, mount/storage lifecycle and
@@ -68,6 +72,11 @@ multipart ETag is a content hash. Honor explicit no-hash instructions and report
 metadata-only verification without claiming full content equality. Avoid full
 rehashing on every monitoring tick.
 
+For routine production delivery, use the selected identity/count/size and
+receipt checks; full object readback is not the default. Record the verification
+method in the completion manifest so metadata-only validation is never confused
+with content hashing. Reuse trusted checksums already available.
+
 On upload failure, preserve the local artifact, record/report the failure and
 resume the same transfer after inspecting its state. Backup failures should not
 silently stop training unless the user selected a backup gate. Report training
@@ -77,3 +86,11 @@ finish selected backups; if impossible, explain the remaining assets before
 seeking a release decision. An explicit instruction to release without backup
 takes precedence. Never describe successful training or a local save as OBS
 backup success.
+
+For non-interactive production jobs, resolve the finalization timeout and
+failure policy before launch. “Preserve locally” only applies while that storage
+survives: exiting nonzero does not protect /cache from platform cleanup. Use the
+verified persistent spool or bounded platform-retention policy in the job
+contract, or record explicit acceptance of the unsaved tail. Do not wait for a
+human at the end of an unattended job, loop forever, or report a required
+delivery as successful after failure. See the exit policy in obs-moxing.md.

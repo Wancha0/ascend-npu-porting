@@ -10,8 +10,8 @@
     {
       "mode": "0644",
       "path": "SKILL.md",
-      "sha256": "1194621306f374f571033023679d596c442cc485a6065f52adf68b26fee2a62c",
-      "size_bytes": 9659,
+      "sha256": "3e23a73385ed63cc75aa79efd73918f0df8930d14ae68a1e30bf5f2e73f3e857",
+      "size_bytes": 9796,
       "type": "file"
     },
     {
@@ -24,8 +24,8 @@
     {
       "mode": "0644",
       "path": "references/artifact-backup.md",
-      "sha256": "b31ec20646286df6c59555749888153bb0eea831848b0d97c2b76a543359a5c8",
-      "size_bytes": 4504,
+      "sha256": "6110acfbac474bb71c7480e84c1035c61f63878a74547bc3b0e8f5b5aa46832b",
+      "size_bytes": 5360,
       "type": "file"
     },
     {
@@ -73,8 +73,15 @@
     {
       "mode": "0644",
       "path": "references/modelarts-production.md",
-      "sha256": "c22ae4af8f8e0ff4120db2fcab7f79c57ae30e168637a99c1a8b6b68d84c80a9",
-      "size_bytes": 9244,
+      "sha256": "585c2bbd4c905e8303be15ef9b0c7d68b5b4ffe1ab14df2673a4b78dd102eeb0",
+      "size_bytes": 9549,
+      "type": "file"
+    },
+    {
+      "mode": "0644",
+      "path": "references/obs-moxing.md",
+      "sha256": "823f626aba435b509d1e1c76090e7e789821d3e51aad54d4d8abed2575f1c4a4",
+      "size_bytes": 10546,
       "type": "file"
     },
     {
@@ -141,7 +148,7 @@
       "type": "file"
     }
   ],
-  "entry_count": 20,
+  "entry_count": 21,
   "excludes": [
     ".git",
     "*/.git",
@@ -162,9 +169,9 @@
     ".DS_Store",
     "*/.DS_Store"
   ],
-  "generated_at": "2026-09-15T10:08:28.002492Z",
+  "generated_at": "2026-09-15T10:26:15.624051Z",
   "hash_algorithm": "sha256",
   "root_name": "ascend-npu-porting-zh",
   "schema_version": 1,
-  "total_file_bytes": 119360
+  "total_file_bytes": 131204
 }

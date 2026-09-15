@@ -31,6 +31,7 @@ description: 将 PyTorch 模型的推理或训练适配到华为昇腾 NPU，支
 | 真实推理、训练、checkpoint、恢复的验收 | [模型验收](references/validation.md) |
 | SSH、启动、监控、停止、退出码和重试 | [任务生命周期](references/job-lifecycle.md) |
 | Notebook 开发后迁移 ModelArts 生产训练、非交互入口和新作业恢复 | [ModelArts 生产训练](references/modelarts-production.md) |
+| 已授权的 OBS 拉取/上传、MoXing 示例、checkpoint 完整发布和退出策略 | [OBS 与 MoXing](references/obs-moxing.md) |
 | 正式训练/提取的保存位置、是否备份 OBS、备份验收 | [产物保存与 OBS 选择](references/artifact-backup.md) |
 | 随包脚本的参数、用途及限制 | [工具说明](references/tools.md) |
 | 查询版本配套、算子/API、分布式和框架语义 | [官方资料索引](references/official-links.md) |

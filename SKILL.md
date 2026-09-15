@@ -68,6 +68,9 @@ For Notebook development followed by ModelArts production training, also read
 [references/modelarts-production.md](references/modelarts-production.md): package
 a non-interactive entry, verify who launches workers, and record production
 deployment evidence separately from Notebook/debug-mode training.
+When authorized OBS staging or checkpoint delivery is part of that job, read
+[references/obs-moxing.md](references/obs-moxing.md) for MoXing examples, transfer
+ownership, committed snapshots and the production exit/retention contract.
 For maximum-batch, throughput, step-time, memory, profiling, or scaling work
 after the relevant readiness gate passes, also read
 [references/training-performance.md](references/training-performance.md). For

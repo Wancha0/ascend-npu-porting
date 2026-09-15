@@ -47,6 +47,8 @@
 
 ## 前台运行，完整交付后结束
 
+OBS 准备、MoXing 示例、checkpoint 提交及容器退出时备份失败的处理，见 [OBS 与 MoXing](obs-moxing.md)。同一资产/目标只选一个传输负责人。平台退出后收集输出需要外部核验；应用自行上传则在前台监督器报告持久交付完成前结束上传。
+
 生产入口以前台方式运行。不能把后台式 run_recorded.py start、nohup、tmux 或 sleep infinity 作为生产训练命令，否则可能只有提交成功而没有平台托管的真实训练。包装器要等待所属 worker、转发停止信号、保留训练失败状态，并等待选定的最终交付。若交付由 trainer 内部或已验证的平台机制完成，可用 exec；若后面还有必要上传/评估，则不能让 exec 跳过这些步骤。
 
 以下是工具包工程建议：
@@ -72,4 +74,3 @@
 分别表述：Notebook 训练已验证、生产作业包已准备、生产试运行通过、生产恢复已验证、完整训练已完成。生产测试证据应含 job ID、模式、源码/镜像/配置、拓扑、实际更新、checkpoint 目标和校验、最终平台/进程状态。没有这些记录不能把本参考称为生产实测经验。
 
 本参考不提供假定跨版本通用的提交配置。按当前控制台/API 或已安装 CLI 生成实际作业文件。[ma-cli 作业说明](https://support.huaweicloud.com/intl/zh-cn/usermanual-standard-modelarts/devtool-modelarts_0320.html)提供提交/查询/日志能力，使用前检查已安装版本的帮助。更新 skill 本身不启动试运行。
-

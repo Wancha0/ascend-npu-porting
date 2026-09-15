@@ -47,6 +47,12 @@ The [environment reference](https://support.huaweicloud.com/develop-modelarts/de
 
 ## Foreground execution and durable completion
 
+For OBS input staging, MoXing examples, checkpoint commits and backup failure
+at container exit, read [obs-moxing.md](obs-moxing.md). Select exactly one
+transfer owner per asset/destination. Platform post-exit output collection
+requires external confirmation; application-managed upload must finish before
+its foreground supervisor reports durable completion.
+
 Production entrypoints run in the foreground. Do not use detached run_recorded.py start, nohup, tmux or sleep infinity as the production training command: submission/startup can otherwise finish while useful work is absent or detached. A wrapper must wait for its owned workers, forward termination, preserve training failure and wait for selected final delivery. An exec launcher is appropriate when checkpoint delivery is inside the trainer or a proven platform output mechanism; it is insufficient if required post-training upload/evaluation still lives after exec.
 
 Toolkit recommendations:
@@ -72,4 +78,3 @@ On failure, retain the first causal traceback, exact job ID/config and last dura
 Separate “Notebook training verified”, “production package prepared”, “production pilot passed”, “production resume verified” and “full training complete”. For each production test record job ID, mode, source/image/config, topology, observed updates, checkpoint destination, verification and final platform/process status. Do not mark this workflow production-tested until those records exist.
 
 No cloud-independent submit template is supplied here: generate the specification from the current console/API or installed CLI schema. Huawei's [ma-cli job reference](https://support.huaweicloud.com/intl/zh-cn/usermanual-standard-modelarts/devtool-modelarts_0320.html) provides submit/status/log operations; check the installed version's help before using it. Preparing this skill does not start a pilot.
-
