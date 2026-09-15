@@ -10,8 +10,8 @@
     {
       "mode": "0644",
       "path": "SKILL.md",
-      "sha256": "c57593e2d6f0924ed2aa91f7c6d165516f27d5c22b43258838d0f1d56402c4a2",
-      "size_bytes": 9508,
+      "sha256": "1194621306f374f571033023679d596c442cc485a6065f52adf68b26fee2a62c",
+      "size_bytes": 9659,
       "type": "file"
     },
     {
@@ -59,8 +59,8 @@
     {
       "mode": "0644",
       "path": "references/job-lifecycle.md",
-      "sha256": "122117e7d56ca049b3ffbcb0f0b8bb74ac5e777e2184d24fcd3c2a3913f394d1",
-      "size_bytes": 4993,
+      "sha256": "2d6b41e08577434d3b88d10c9bc0eb5e1f14a25ff2b25adb2a4755b030eb2b33",
+      "size_bytes": 5227,
       "type": "file"
     },
     {
@@ -68,6 +68,13 @@
       "path": "references/model-independent.md",
       "sha256": "0c65657b237af4fa83f23c8e4ab9216c935f6c4a134e8de1679a693da4ee5154",
       "size_bytes": 4422,
+      "type": "file"
+    },
+    {
+      "mode": "0644",
+      "path": "references/modelarts-production.md",
+      "sha256": "c22ae4af8f8e0ff4120db2fcab7f79c57ae30e168637a99c1a8b6b68d84c80a9",
+      "size_bytes": 9244,
       "type": "file"
     },
     {
@@ -134,7 +141,7 @@
       "type": "file"
     }
   ],
-  "entry_count": 19,
+  "entry_count": 20,
   "excludes": [
     ".git",
     "*/.git",
@@ -155,9 +162,9 @@
     ".DS_Store",
     "*/.DS_Store"
   ],
-  "generated_at": "2026-09-15T09:27:30.533456Z",
+  "generated_at": "2026-09-15T10:08:28.002492Z",
   "hash_algorithm": "sha256",
   "root_name": "ascend-npu-porting-zh",
   "schema_version": 1,
-  "total_file_bytes": 109731
+  "total_file_bytes": 119360
 }

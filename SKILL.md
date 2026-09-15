@@ -64,6 +64,10 @@ For training or multi-card work, read
 [references/training-readiness.md](references/training-readiness.md). For
 creating, submitting, monitoring, stopping, or resuming a training job, also
 read [references/training-job-lifecycle.md](references/training-job-lifecycle.md).
+For Notebook development followed by ModelArts production training, also read
+[references/modelarts-production.md](references/modelarts-production.md): package
+a non-interactive entry, verify who launches workers, and record production
+deployment evidence separately from Notebook/debug-mode training.
 For maximum-batch, throughput, step-time, memory, profiling, or scaling work
 after the relevant readiness gate passes, also read
 [references/training-performance.md](references/training-performance.md). For

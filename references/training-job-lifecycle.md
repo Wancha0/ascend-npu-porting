@@ -4,6 +4,10 @@ Read this reference when the requested outcome includes creating, submitting,
 monitoring, stopping, or resuming an NPU training job. Keep the project training
 contract separate from the scheduler or cloud adapter.
 
+For ModelArts production jobs, also read [modelarts-production.md](modelarts-production.md).
+Its foreground platform entry replaces SSH/background launch patterns; Notebook
+success does not by itself prove production deployment or fresh-job resume.
+
 Generating launcher/config files is a normal code deliverable. Submitting a
 remote or paid job, reserving accelerators, stopping another process, or
 deleting outputs changes external state and requires explicit user authority.
