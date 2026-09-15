@@ -130,4 +130,3 @@ For application-managed transfers, an overall success record requires training s
 ## Bounded acceptance
 
 Reuse existing evidence and verify only the changed integration: one small input to the actual job-local path; one real checkpoint committed to the chosen destination; and a fresh-job load of that committed checkpoint. Check ordinary/EMA distinction and restore training state if continuation is claimed. Local/mock tests do not prove cloud permissions, termination retention or production recovery.
-

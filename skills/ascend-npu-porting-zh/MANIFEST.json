@@ -80,8 +80,8 @@
     {
       "mode": "0644",
       "path": "references/obs-moxing.md",
-      "sha256": "823f626aba435b509d1e1c76090e7e789821d3e51aad54d4d8abed2575f1c4a4",
-      "size_bytes": 10546,
+      "sha256": "bc31bc04567ca30ffcfb210cfc47a3d37587bce77c2005edde665d01fe5c74c4",
+      "size_bytes": 10545,
       "type": "file"
     },
     {
@@ -169,9 +169,9 @@
     ".DS_Store",
     "*/.DS_Store"
   ],
-  "generated_at": "2026-09-15T10:26:15.624051Z",
+  "generated_at": "2026-09-15T10:26:36.912518Z",
   "hash_algorithm": "sha256",
   "root_name": "ascend-npu-porting-zh",
   "schema_version": 1,
-  "total_file_bytes": 131204
+  "total_file_bytes": 131203
 }
