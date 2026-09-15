@@ -12,6 +12,11 @@ it.
 
 ## Freeze the job contract
 
+Before a long production run, apply [artifact-backup.md](artifact-backup.md).
+Record the user's storage choice separately from checkpoint cadence: writing
+checkpoints locally does not implement OBS backup. Reuse existing authorization;
+do not silently turn an undecided backup policy into local-only retention.
+
 Record these values before generating a launcher:
 
 - project root, environment initialization, training entrypoint, and immutable
@@ -110,6 +115,9 @@ After submission, inspect both scheduler state and process evidence. Require:
 - absence of OOM, HCCL, NaN/Inf, traceback, compile, missing-operator, and
   unexpected-fallback errors;
 - checkpoint creation at the promised cadence.
+- when OBS backup was selected, the independent uploader's latest verified
+  checkpoint step, pending assets, and errors; training progress is not upload
+  progress, and a running uploader is not proof of a completed backup.
 
 Stop only the exact job ID or recorded process group. On failure, preserve logs,
 the last valid checkpoint, scheduler metadata, and the first causal traceback
@@ -128,3 +136,8 @@ checkpoint exists, strict reload and another forward pass, hashes are recorded,
 child processes and ports are released, and NPUs return to the expected idle
 state. Then assign the readiness label from `SKILL.md`; scheduler success alone
 does not raise it.
+
+Report training completion and backup completion separately. When selected
+backup is pending or failed, retain the source artifacts and report that state;
+do not release/delete the only copy as part of routine cleanup. Follow an
+explicit user instruction to release resources without backup if given.

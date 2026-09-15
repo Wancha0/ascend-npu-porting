@@ -16,6 +16,13 @@ to inventory whether required artifacts already exist locally, record their
 path/hash/interface contracts, and continue with source adaptation. Never turn
 that inventory into an unrequested transfer operation.
 
+For remote training or substantial feature extraction, explicitly establish
+whether outputs will be backed up to OBS; a local checkpoint is not a backup.
+Read [references/artifact-backup.md](references/artifact-backup.md), prepare a
+concrete asset/destination/cadence proposal, and let the user choose unless an
+applicable choice is already recorded. This storage decision does not authorize
+unrequested transfers or block independent source adaptation and bounded tests.
+
 This repository is an agent-neutral Markdown and Python toolkit. It must not
 depend on Codex, MCP, chat history, or a proprietary orchestration API to carry
 out the port. On another computer or with a different coding agent, begin with
@@ -177,6 +184,8 @@ Adapt the list to the repository, but normally leave:
   expected gates, official reference links, cleanup, and known limitations;
 - machine-readable evidence containing source revision, patch hashes, runtime
   versions, exercised code paths, topology, metrics, artifacts, and failures.
+- for remote production jobs, the recorded backup choice and per-asset local,
+  OBS upload, and verification status, including omissions and pending failures;
 - for performance work, a baseline-versus-final report containing the frozen
   workload, warmup/measurement windows, repeat runs, throughput/step-time/HBM,
   bottleneck attribution, accepted and rejected changes, and rollback paths.

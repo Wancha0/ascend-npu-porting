@@ -10,8 +10,8 @@
     {
       "mode": "0644",
       "path": "SKILL.md",
-      "sha256": "0eae2d6bba159f1bb3d28c72b2be38e30732f1871bb3da7850576540f1f8cab2",
-      "size_bytes": 8824,
+      "sha256": "c57593e2d6f0924ed2aa91f7c6d165516f27d5c22b43258838d0f1d56402c4a2",
+      "size_bytes": 9508,
       "type": "file"
     },
     {
@@ -19,6 +19,13 @@
       "path": "agents/openai.yaml",
       "sha256": "7b4d41124d46542d829b7897adf007985badaa2124c91d67c389392311513b18",
       "size_bytes": 305,
+      "type": "file"
+    },
+    {
+      "mode": "0644",
+      "path": "references/artifact-backup.md",
+      "sha256": "b31ec20646286df6c59555749888153bb0eea831848b0d97c2b76a543359a5c8",
+      "size_bytes": 4504,
       "type": "file"
     },
     {
@@ -52,8 +59,8 @@
     {
       "mode": "0644",
       "path": "references/job-lifecycle.md",
-      "sha256": "16d595a1daec9f4d381019dc3830357553adc9363c5fedba1281c58072e5ec83",
-      "size_bytes": 4364,
+      "sha256": "122117e7d56ca049b3ffbcb0f0b8bb74ac5e777e2184d24fcd3c2a3913f394d1",
+      "size_bytes": 4993,
       "type": "file"
     },
     {
@@ -127,7 +134,7 @@
       "type": "file"
     }
   ],
-  "entry_count": 18,
+  "entry_count": 19,
   "excludes": [
     ".git",
     "*/.git",
@@ -148,9 +155,9 @@
     ".DS_Store",
     "*/.DS_Store"
   ],
-  "generated_at": "2026-09-08T07:49:43.216629Z",
+  "generated_at": "2026-09-15T09:27:30.533456Z",
   "hash_algorithm": "sha256",
   "root_name": "ascend-npu-porting-zh",
   "schema_version": 1,
-  "total_file_bytes": 103914
+  "total_file_bytes": 109731
 }

@@ -20,6 +20,7 @@ description: 将 PyTorch 模型的推理或训练适配到华为昇腾 NPU，支
 2. **确定目标。** 写清推理/训练、全参数或指定可训练模块、真实输入、精度、卡数/节点数、最大更新步数、是否要求保存恢复。用户已明确的选择不重复询问。
 3. **追踪实际入口。** 从用户要执行的 launcher 找到导入的代码、配置、依赖和数据生产路径，记录每个仓库的 commit、补丁及工作树状态。只改本次执行路径上的问题。
 4. **读取必要材料。** 按下面表格选择；不要每轮重读全部文档或重复工具包自检。同一份复制包首次使用时执行 `python3 scripts/self_check.py`；它只检查工具包，不证明 NPU 或模型通过。
+5. **明确资产是否备份。** 远程正式训练或大规模特征提取前，按[产物保存与 OBS 选择](references/artifact-backup.md)列出资产、目标位置和备份频率，让用户选择；已有适用选择直接沿用。本地 checkpoint 不等于 OBS 备份。等待选择时继续独立的代码适配和有界测试，不擅自上传。
 
 | 当前工作 | 读取材料 |
 |---|---|
@@ -29,6 +30,7 @@ description: 将 PyTorch 模型的推理或训练适配到华为昇腾 NPU，支
 | 设备、算子、依赖、显存、offload、多卡策略 | [兼容问题与修复](references/compatibility.md) |
 | 真实推理、训练、checkpoint、恢复的验收 | [模型验收](references/validation.md) |
 | SSH、启动、监控、停止、退出码和重试 | [任务生命周期](references/job-lifecycle.md) |
+| 正式训练/提取的保存位置、是否备份 OBS、备份验收 | [产物保存与 OBS 选择](references/artifact-backup.md) |
 | 随包脚本的参数、用途及限制 | [工具说明](references/tools.md) |
 | 查询版本配套、算子/API、分布式和框架语义 | [官方资料索引](references/official-links.md) |
 
@@ -41,6 +43,7 @@ description: 将 PyTorch 模型的推理或训练适配到华为昇腾 NPU，支
 - 模型：完整/裁剪/量化权重；冻结与训练模块；音频/视频/条件分支；checkpoint 严格加载及必要转换。
 - 数据：真实样本数、缓存生成契约、张量形状/dtype、每卡 batch、重复次数、梯度累积及实际全局 batch。
 - 运行：唯一输出目录、命令文件、最大 optimizer 更新数、日志、进程身份、完成判据、是否验收恢复。
+- 保存：用户的备份选择、各类资产的本地路径及 OBS 目标、同步频率、校验方式和最近一次备份状态；未选择写待确认，不能默认为不备份。
 
 优先保留平台提供的 torch/torch_npu/CANN 组合。额外依赖放隔离环境；确认 wheel 架构和 Python ABI，并防止安装器替换平台 torch。需要更换组合时查询目标版本的[昇腾官方说明](https://github.com/Ascend/pytorch)，不可把案例版本当成通用推荐。
 
