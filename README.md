@@ -1,63 +1,30 @@
-# Ascend NPU Porting
+# 昇腾 NPU 适配 skill
 
-## GLM 中文使用入口
+一个中文版本，支持 GPT 和 GLM 编码智能体。用于 PyTorch 到昇腾 NPU 的适配、训练/推理验证、多卡问题、ModelArts 正式训练，以及已授权的 OBS 下载与保存。
 
-先读 **[中文 skill 的 README](skills/ascend-npu-porting-zh/README.md)**，再按引导读取 [SKILL.md](skills/ascend-npu-porting-zh/SKILL.md)。README 包含可直接交给 GLM 的启动提示、输入清单、快速训练模式和断线续接方法；整目录可复制到任何具备文件、Shell 和目标机访问能力的编码宿主。
+**从 [SKILL.md](SKILL.md) 开始，按当前任务读取参考。**
 
-本分支合并了此前本地技能改进，并新增通用中文包。中文包补充了已有资产优先、按用户要求跳过资产 hash、框架下的真实参数更新测量，以及 FastWAM 实测经验。只有文档和通用工具，没有模型权重、数据、环境或 FastWAM 适配代码。
+推荐流程：Notebook 开发 → 作业包准备 → 生产试运行 → 正式训练与周期备份 → 交付确认 → 评估。
 
-获取本次发布分支：
+## 使用
+
+从当前发布分支获取：
 
 ```bash
 git clone --branch codex/glm-zh-training-first --single-branch https://github.com/Wancha0/ascend-npu-porting.git
-cd ascend-npu-porting
 ```
 
-给 GLM 的最短提示：
+可将整个目录交给 GPT 或 GLM；宿主支持目录式 skill 时安装为 `ascend-npu-porting`，否则直接要求读取 SKILL.md 的绝对路径。智能体需要文件和命令执行能力；访问目标节点或云平台还需对应工具与授权。
 
 ```text
-请读取当前仓库 skills/ascend-npu-porting-zh/README.md，并依照其中的
-SKILL.md 和启动模板，为我指定的模型执行昇腾 NPU 适配。
+读取 [skill 绝对路径]/SKILL.md，为以下项目执行 NPU 适配：
+源码与版本：[仓库/目录/revision]
+目标环境：[节点访问方式、解释器、NPU/节点数]
+资产：[权重、数据或特征位置]
+目标与预算：[训练/推理/恢复/评估，参数与更新步数]
+保存策略：[已有 OBS 选择或待确定的范围]
+接续状态：[已有 ledger 和活跃任务]
+复用有效验证，只补当前缺口，报告真实结果和未测项。
 ```
 
-选择中文包时只需复制 `skills/ascend-npu-porting-zh/`，它不依赖根目录的英文包；不要把两套说明当成需要重复执行的检查清单。
-
-## Original English toolkit
-
-An agent-independent, code-first workflow for adapting and validating PyTorch
-projects on Huawei Ascend NPU. Codex is not required: GLM-hosted coding agents,
-other coding agents, and human operators can use the Markdown instructions and
-Python standard-library helpers.
-
-- Start on a new computer with [PORTABLE_AGENT_GUIDE.md](PORTABLE_AGENT_GUIDE.md).
-- Give an agent [SKILL.md](SKILL.md) as the authoritative decision guide.
-- For GLM, also use [references/glm-agent.md](references/glm-agent.md) to verify
-  the host's actual capabilities and persistence behavior.
-- Verify a copied toolkit with `python3 scripts/self_check.py` before use.
-- For remote Bash, use the bundled SSH helper described in
-  [references/ssh-execution.md](references/ssh-execution.md).
-- To test independent execution by GLM, use
-  [references/agent-validation.md](references/agent-validation.md) for a recorded
-  development run, a fresh replay, and a second-model transfer test.
-
-Quick start:
-
-```bash
-git clone https://github.com/Wancha0/ascend-npu-porting.git
-cd ascend-npu-porting
-python3 scripts/self_check.py
-```
-
-The workflow covers source compatibility, real model/training/serving gates,
-HCCL/DDP, checkpoint and resume evidence, offline handoff, and optional
-post-port profiling and performance tuning. It also covers hash-guarded
-multi-library patch delivery and scheduler-independent training-job lifecycle
-contracts. It includes local artifact availability contracts but deliberately
-excludes OBS and data-transfer operations.
-
-Public delivery contains instructions, small source patches, project-owned
-overlays, launch/config files, tests, and hash manifests—not complete dependency
-trees, accelerator runtimes, virtual environments, weights, datasets, or
-caches. See
-[references/dependency-patch-delivery.md](references/dependency-patch-delivery.md)
-for reconstructing changes that span installed libraries.
+所有使用说明只维护中文。Python 标识符、CLI 参数和第三方 API 保持原名。生产流程文档及本地工具检查不等于云端生产实测通过。

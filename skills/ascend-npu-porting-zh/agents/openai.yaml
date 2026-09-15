@@ -1,4 +1,0 @@
-interface:
-  display_name: "昇腾 NPU 适配（中文）"
-  short_description: "供 GLM 等编码智能体执行真实模型 NPU 适配、验收与离线交接"
-  default_prompt: "使用 $ascend-npu-porting-zh 完成本项目的昇腾 NPU 适配，按真实模型与目标拓扑验证并保留证据。"

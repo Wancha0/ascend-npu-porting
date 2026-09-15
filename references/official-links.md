@@ -1,94 +1,40 @@
-# Official and Primary References
+# 官方资料索引
 
-Use these links to resolve version, operator, precision, memory, and distributed
-questions. Prefer the document branch/version matching the installed runtime;
-do not apply commands from the newest page to an older CANN/torch_npu stack.
-Record the exact URL, branch/tag, and retrieval date in `NPU_PORTING.md`.
+链接用于解决当前具体未知项，不要求逐项阅读。2026-09-08 核查了下列入口。`master`、默认版和 stable 页面会变化；实际决策必须记录目标安装版本、访问日期、适用章节和必要的 commit/tag。文档描述的 API 语义不等于该 API 已在目标 NPU 上通过。
 
-## Ascend runtime and API sources
+## 昇腾版本、算子与通信
 
-- [TorchNPU repository and quick start](https://github.com/Ascend/pytorch):
-  source of truth for installation entrypoints, runtime behavior, issues, and
-  the implementation of `torch_npu`.
-- [TorchNPU version compatibility table](https://github.com/Ascend/pytorch/blob/master/COMPATIBILITY.en.md):
-  check the PyTorch, TorchNPU, CANN, Python, driver, and firmware tuple before
-  installing or replacing anything.
-- [TorchNPU Chinese documentation portal](https://www.hiascend.com/document/detail/zh/Pytorch/2610/index/index.html):
-  navigate from the matching installed version to native API support, custom
-  APIs, environment variables, model migration, troubleshooting, and release
-  notes. Change `2610` only after confirming the target documentation version.
-- [TorchNPU custom API reference](https://ascend.github.io/docs/sources/pytorch/api_doc.html):
-  inspect supported dtypes, shapes, layouts, products, and constraints for
-  NPU-specific operators.
-- [`transfer_to_npu` compatibility shim source](https://github.com/Ascend/pytorch/blob/master/torch_npu/contrib/transfer_to_npu.py):
-  read the actual monkey-patches before relying on CUDA-like attributes or API
-  rewrites. This is especially relevant to `.is_cuda` and CUDA-JIT routing.
-- [`PYTORCH_NPU_ALLOC_CONF` reference](https://github.com/Ascend/pytorch/blob/master/docs/zh/api/environment_variable/memory_management/PYTORCH_NPU_ALLOC_CONF.md):
-  consult only after measuring an actual allocator or fragmentation problem.
-- [HCCL process-group parameter example](https://github.com/Ascend/pytorch/blob/master/docs/zh/developer_notes/distributed/parameter_setting/setting_HCCL_communicator_parameter.md):
-  reference for explicit HCCL process-group configuration. Do not copy buffer
-  or timeout values without measuring the target topology.
+| 官方入口 | 何时查、要确认什么 |
+|---|---|
+| [torch_npu 项目](https://github.com/Ascend/pytorch) | 安装/设备注册/功能支持；按目标 release 查源码，沿官方链接进入当前维护仓库 |
+| [中文版本配套矩阵](https://github.com/Ascend/pytorch/blob/master/COMPATIBILITY.md) | 更换或诊断 torch_npu、PyTorch、CANN、Python、固件/驱动组合；不能直接安装页面最新推荐来覆盖平台环境 |
+| [昇腾 PyTorch API 文档](https://ascend.github.io/docs/sources/pytorch/api_doc.html) | 查 NPU 设备、算子、dtype、布局等接口；同时确认该页和目标 torch_npu 版本是否一致 |
+| [昇腾官方文档中心](https://www.hiascend.com/document) | 选择当前硬件/CANN 版本后查算子约束、HCCL 通信、环境变量、Profiler、错误码和自定义算子开发；不要照抄 CUDA/NCCL 参数代替 HCCL |
 
-## Profiling and performance sources
+文档中心是多产品入口，不能把其首页作为某个具体算子“支持”的唯一引用。做实际决定时继续进入对应版本章节，并把最终页面 URL 写进该项目的 `NPU_PORTING.md`。
 
-- [Ascend msProf quick start](https://www.hiascend.com/document/detail/en/mindstudio/2600/TITools/msProf/docs/en/getting_started/quick_start.md):
-  official collection workflow for host and device performance traces. Use the
-  documentation version matching the installed toolkit.
-- [msprof-analyze quick start](https://github.com/Ascend/msprof-analyze/blob/master/docs/zh/quick_start/msprof-analyze_quick_start.md):
-  official analysis-tool entrypoint for collected profiling data.
-- [msprof-analyze operator MFU guidance](https://github.com/Ascend/msprof-analyze/blob/master/docs/en/advanced_features/operator_mfu_instruct.md):
-  reference for interpreting operator utilization; MFU is diagnostic evidence,
-  not a substitute for end-to-end throughput.
-- [PyTorch profiler](https://docs.pytorch.org/docs/stable/profiler.html):
-  reference for scheduled traces, activities, shapes, memory, and stack capture.
-  Confirm TorchNPU support in the installed version before enabling options.
+## PyTorch 算法语义与训练状态
 
-## Precision and framework semantics
+以下 2.6 页面保留为可定位的历史版本入口；新项目使用其他版本时切换到匹配版本。
 
-- [Ascend msProbe](https://github.com/Ascend/msprobe): official tool for
-  collecting and comparing CPU/GPU/NPU activations, gradients, and operator
-  precision when simple parity tests cannot locate the first divergence.
-- [PyTorch AMP documentation](https://docs.pytorch.org/docs/stable/amp.html):
-  reference for device-aware autocast and gradient-scaling semantics.
-- [PyTorch distributed documentation](https://docs.pytorch.org/docs/stable/distributed.html):
-  reference for process groups, collectives, rank/world-size semantics, and
-  cleanup. Use `hccl` where required by the installed TorchNPU stack.
-- [PyTorch DistributedDataParallel](https://docs.pytorch.org/docs/stable/generated/torch.nn.parallel.DistributedDataParallel.html):
-  reference for DDP construction, gradient buckets, unused parameters, and
-  optimizer interaction.
-- [PyTorch `torchrun` documentation](https://docs.pytorch.org/docs/stable/elastic/run.html):
-  primary reference for standalone and multi-node launcher arguments, rank
-  environment, rendezvous, and failure behavior.
-- [Accelerate NPU guide](https://huggingface.co/docs/accelerate/usage_guides/npu):
-  framework-maintained NPU setup guidance. Confirm its release matches the
-  installed Accelerate and TorchNPU tuple before generating a job config.
+| 官方入口 | 何时查、要确认什么 |
+|---|---|
+| [torch.distributed](https://docs.pytorch.org/docs/2.6/distributed.html) | 进程组、rank、collective 的顺序和语义；NPU 后端是否支持还要看 torch_npu/HCCL |
+| [FSDP](https://docs.pytorch.org/docs/2.6/fsdp.html) | 分片、参数包装、CPU offload、state dict 等约束；不是默认要求所有模型采用 FSDP |
+| [自动混合精度 AMP](https://docs.pytorch.org/docs/2.6/amp.html) | autocast、梯度缩放、非有限梯度和跳步语义；具体 NPU dtype 支持另核实 |
+| [scaled_dot_product_attention](https://docs.pytorch.org/docs/2.6/generated/torch.nn.functional.scaled_dot_product_attention.html) | mask、dropout、causal、shape 和 attention fallback 的语义；不能只验证输出尺寸 |
 
-## Source-project case studies
+## 使用了对应框架时再查
 
-- [DreamWAM source](https://github.com/hustvl/DreamWAM) and
-  [paper](https://arxiv.org/abs/2608.04996): useful for tracing a multi-encoder,
-  video/action training graph with Accelerate, custom preprocessing, and strict
-  checkpoint contracts.
-- [FastWAM source](https://github.com/yuantianyuan01/FastWAM): useful for
-  tracing Hydra configuration, DeepSpeed/torchrun entrypoints, optional compile
-  paths, VideoDiT/ActionDiT coupling, and evaluation workers.
+| 官方入口 | 何时查、要确认什么 |
+|---|---|
+| [Accelerate 梯度累积](https://huggingface.co/docs/accelerate/usage_guides/gradient_accumulation) | 项目使用 Accelerate 时查 `accumulate`、同步边界与 optimizer 行为；选匹配安装版本 |
+| [Accelerate v1.12.0 DeepSpeed 包装源码](https://github.com/huggingface/accelerate/blob/v1.12.0/src/accelerate/utils/deepspeed.py) | 本次历史版本中确认 `DeepSpeedEngineWrapper.backward`、engine 更新和 optimizer 包装调用时点；其他版本重新核实 |
+| [DeepSpeed checkpoint 文档](https://deepspeed.readthedocs.io/en/latest/model-checkpointing.html) | 确认各 rank 参与保存、分片状态及恢复限制；latest 会变化，按已安装版本查对应源码 |
+| [GLM 官方 skills](https://github.com/zai-org/GLM-skills) | 了解目录式 skill 的组织；宿主实际文件/命令能力仍须单独验证 |
 
-The GLM guide also records an audited ActionWM composite-source snapshot. It is
-an illustrative failure pattern, not an availability dependency or an
-authoritative source link; the public workflow must remain usable when that
-external repository or its branches are unavailable.
+模型自身官方仓库、实际依赖的 Transformers/Diffusers/DeepSpeed 等文档、任务数据说明和 checkpoint 说明，由本次项目契约动态补充。不要预先把某个框架设为所有模型的前提。
 
-## GLM coding-agent sources
+## 引用与离线使用
 
-- [Z.AI Coding Plan quick start](https://docs.z.ai/devpack/quick-start): official
-  setup entrypoint showing that GLM is used through multiple coding-agent hosts.
-- [Z.AI coding-tool integrations](https://docs.z.ai/devpack/tool/others):
-  official host-specific setup pages; use them to distinguish model access from
-  the host's file, shell, and editing capabilities.
-- [Official GLM skills repository](https://github.com/zai-org/GLM-skills):
-  primary example of portable directory skills with `SKILL.md`. Its presence
-  does not prove that every GLM host auto-discovers arbitrary local skills.
-
-These projects are architectural examples, not universal NPU patches. Re-run
-static inventory and representative operator gates for every new repository and
-runtime tuple.
+每个影响实现的判断记录：问题、目标版本、官方 URL/章节、对应源码位置、采用的方案和运行证据。网络不可达时可读已安装包源码或用户提供的官方文档副本，并记录版本/哈希；未核实的能力标为未知。社区经验只作为诊断线索，不替代官方约束或本机实测。

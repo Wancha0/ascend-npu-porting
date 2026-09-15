@@ -1,96 +1,39 @@
-# Artifact retention and OBS choice
+# 产物保存与 OBS 选择
 
-Apply this to remote production training and substantial feature extraction,
-including successor jobs. A code review or short disposable operator test does
-not require a storage questionnaire. This defines retention decisions, not an
-OBS client implementation or permission to transfer assets.
+适用于远程正式训练、大规模特征提取及其后续实验。普通代码审查、短时可丢弃的算子测试无需逐次询问存储方案。本规则用于明确保存决策，不实现 OBS 客户端，也不自动授权上传。
 
-For authorized ModelArts transfers, use [obs-moxing.md](obs-moxing.md).
-Choose a single transfer owner per asset/destination; a platform output mapping
-and an explicit uploader must not unknowingly duplicate or overwrite each other.
+ModelArts 已授权传输见 [OBS 与 MoXing](obs-moxing.md)。同一资产/目标只指定一个传输负责人，避免平台输出映射与显式上传器重复复制或相互覆盖。
 
-## Prepare the choice
+## 先把方案准备具体
 
-Before asking, inspect the actual output paths, mount/storage lifecycle and
-already-authorized backup receipts. Directory names such as `/cache` and
-`/home/ma-user/work`, a login banner, or a detached process do not establish
-durability. Record whether storage survives process exit, pod/job deletion and
-node release; mark unsupported claims unknown. Pod-local `emptyDir` can disappear
-when the pod is removed. SwanLab/W&B scalar curves and a locally saved report
-do not back up model weights or feature tensors.
+询问前，检查真实输出路径、挂载及存储生命周期、已有授权范围内的备份回执。`/cache`、`/home/ma-user/work` 等目录名、登录提示或后台进程都不能证明持久化。分别确认进程退出、Pod/作业删除、节点释放后是否保留；证据不足写未知。Pod 的 `emptyDir` 可随 Pod 删除而消失。SwanLab/W&B 曲线、本机报告不包含模型权重或特征张量，不能替代资产备份。
 
-Prepare a compact table: asset category, actual/planned source, existing verified
-durable copy, proposed OBS prefix, estimated bytes (or unknown), and cadence.
-Distinguish pretrained encoders, trained policy checkpoints, full resume state,
-configs/source patches, metrics/evaluation/latency records, raw datasets, visual
-and text caches. Reuse matching verified backups; do not reupload them merely
-because a new job starts. Never infer an existing backup from an OBS-looking
-path in a script, an upload plan, or historical access to a different server.
+准备简表：资产类别、实际或计划源路径、已有且核验的持久副本、拟用 OBS 前缀、估计字节数（未知就写未知）、同步频率。分清预训练编码器、训练出的策略权重、完整续训状态、配置/源码补丁、指标/评估/原始 latency 记录、原始数据、视觉与文本缓存。匹配且已核验的备份可复用，不因新任务启动重复上传。脚本里的 OBS 路径、计划上传、旧服务器曾存在资产都不证明已备份。
 
-## Let the user decide
+## 让用户选择
 
-If the current project has an applicable explicit choice, reuse and record it.
-Otherwise present the concrete proposal with these choices:
+当前项目已有适用的明确选择时直接沿用并记录；否则展示具体方案并提供以下选项：
 
-| Choice | Scope and consequence |
+| 选项 | 范围与影响 |
 |---|---|
-| Key artifacts to OBS (recommended) | Configs/source deltas, metrics, evaluation and raw latency records; periodic latest recoverable checkpoint plus final ordinary/EMA checkpoints when produced. Include optimizer/scheduler/scaler/RNG/data progress where supported. No full datasets or feature caches by default. |
-| Key artifacts plus selected caches | Above, plus specifically listed pretrained weights, raw data or visual/text caches; show their estimated volume and transfer/storage cost implications before selection. |
-| Server-local only | No OBS upload. State the actual storage lifetime and that artifacts on ephemeral storage can be lost on pod removal or node release. |
+| 关键产物备份到 OBS（推荐） | 配置/源码差异、指标、评估和原始 latency 记录；定期保存最近可恢复 checkpoint，以及最终普通/EMA 权重（若有）。续训状态包含框架支持的 optimizer/scheduler/scaler/RNG/数据进度。默认不含完整数据集或特征缓存。 |
+| 关键产物及指定缓存备份 | 上述产物加用户明确选择的预训练权重、原始数据、视觉/文本缓存；选择前列出预计体积及传输、存储开销。 |
+| 仅保存在服务器 | 不上传 OBS。说明实际存储生命周期，以及临时存储可能随 Pod 删除或节点释放而丢失。 |
 
-Propose a specific checkpoint upload cadence using the run's existing save
-cadence, and name the authorized bucket/prefix if known. Ask for missing target
-or cadence details together with the scope choice. Do not invent a bucket, embed
-credentials, or treat silence as a choice. Explain that the question implements
-this skill's storage-choice requirement, linking this reference and `SKILL.md`.
-Record scope, destination, cadence, retention, verification method, and the
-user's decision in the job contract/ledger for subsequent agents and controllers.
+结合本次 checkpoint 保存频率提出具体的上传频率，已知时写出授权 bucket/prefix；目的地、频率缺失时和范围选择一起询问。不能臆造桶、写入凭证或把未回答视为选择。说明问题来自本技能的存储选择要求，并链接本参考及 `SKILL.md`。把范围、目的地、频率、保留策略、校验方式、用户决定写入运行契约/ledger，供后续智能体和控制器沿用。
 
-Continue independent adaptation, read-only preparation and bounded tests while
-the choice is pending. Resolve it before committing to a new long production
-run unless the user explicitly says to proceed with that decision pending.
-Do not stop an already-authorized running job solely to retrofit this choice;
-ask while it continues. This skill edit itself does not authorize an upload.
+等待选择时继续独立的代码适配、只读准备与有界测试。新增长时间正式任务应在选择明确后启动，除非用户明确要求先启动、备份待定。对已经获准且正在运行的任务，不为补问备份而停机，应在运行中询问。修改本技能本身不授权实际上传。
 
-## Implement and report the selected policy
+## 按选择执行并准确报告
 
-Use an existing authorized client/SDK and a job-specific OBS prefix. Upload only
-atomically completed files or immutable snapshots, never a checkpoint being
-written. Keep synchronization independent of SSH or the user's laptop when
-available. If a relay or local process is required, disclose the dependency.
-Do not automatically delete old checkpoints, caches or OBS objects; define any
-retention deletion in the user's selected policy first.
+使用已有授权的客户端/SDK及本任务独立 OBS 前缀。只上传已原子完成的文件或不可变快照，不能上传仍在写入的 checkpoint。条件允许时让同步在服务器独立运行，不依赖 SSH 或用户电脑；确需本机中转时说明依赖。不要自动删除旧 checkpoint、缓存或 OBS 对象；删除保留策略须先包含在用户选择中。
 
-Track per asset: `local_only`, `pending`, `uploading`, `uploaded_unverified`,
-`verified`, `failed`, or `excluded_by_choice`. Store source/run/model identity,
-step and ordinary/EMA/resume role, exact OBS URI, bytes, upload receipt/time,
-verification method/result, and outstanding errors outside ephemeral storage.
-An upload process or zero submission exit is not a completed transfer. Verify
-the remote object against the chosen contract. For integrity archival, compare
-size and trusted checksums, using full readback when required; do not assume a
-multipart ETag is a content hash. Honor explicit no-hash instructions and report
-metadata-only verification without claiming full content equality. Avoid full
-rehashing on every monitoring tick.
+逐项区分 `local_only`、`pending`、`uploading`、`uploaded_unverified`、`verified`、`failed`、`excluded_by_choice`。记录来源/run/模型身份、step、普通/EMA/续训用途、确切 OBS URI、字节数、上传回执/时间、校验方式/结果和错误；这些回执也要保存到临时存储以外。上传进程存在、提交命令退出 0 都不证明传输完成。
 
-For routine production delivery, use the selected identity/count/size and
-receipt checks; full object readback is not the default. Record the verification
-method in the completion manifest so metadata-only validation is never confused
-with content hashing. Reuse trusted checksums already available.
+按约定核验远端对象。完整性归档需比对大小及可信内容摘要，必要时完整回读；不能把 multipart ETag 默认当成内容哈希。用户明确 no-hash 时遵从，标明仅元数据核验，不能宣称内容完全一致。日常监控不重复全量哈希。
 
-On upload failure, preserve the local artifact, record/report the failure and
-resume the same transfer after inspecting its state. Backup failures should not
-silently stop training unless the user selected a backup gate. Report training
-and backup completion separately, including the latest backed-up step and exact
-excluded/pending assets. Before routine cleanup or releasing the source node,
-finish selected backups; if impossible, explain the remaining assets before
-seeking a release decision. An explicit instruction to release without backup
-takes precedence. Never describe successful training or a local save as OBS
-backup success.
+日常生产交付采用选定的资产身份、数量/大小和回执检查，不默认完整回读对象。完成清单记录校验方法，区分元数据核验与内容哈希；已有可信摘要直接复用。
 
-For non-interactive production jobs, resolve the finalization timeout and
-failure policy before launch. “Preserve locally” only applies while that storage
-survives: exiting nonzero does not protect /cache from platform cleanup. Use the
-verified persistent spool or bounded platform-retention policy in the job
-contract, or record explicit acceptance of the unsaved tail. Do not wait for a
-human at the end of an unattended job, loop forever, or report a required
-delivery as successful after failure. See the exit policy in obs-moxing.md.
+上传失败时保留本地产物，记录并报告失败，查明已有传输状态后续传。除非用户选择了备份门禁，不因同步失败静默停止训练。训练完成与备份完成分开报告，列出最近已备份 step、明确排除及待传项。常规清理或释放源节点前完成已选备份；无法完成时，先列出仍未备份的资产再让用户决定是否释放。用户明确要求不备份释放时服从其指令。不能把训练成功或本地保存写成 OBS 备份成功。
+
+非交互生产作业在启动前决定最终收尾超时和失败策略。“本地保留”仅在该存储仍存活时成立，非零退出不能阻止平台清理 /cache。按契约使用已验证的持久 spool 或有界平台保留策略；否则需用户明确接受未保存部分的风险。不能到无人值守任务结尾再等待人工、无限重试，或将必要交付失败报告为成功。具体见 obs-moxing.md 的退出策略。

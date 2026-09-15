@@ -1,49 +1,49 @@
-# OBS and MoXing for production training
+# 正式训练的 OBS 与 MoXing 流程
 
-Read after [ModelArts production](modelarts-production.md) when OBS asset transfer is in scope. Keep [the user's backup choice](artifact-backup.md). Reviewed 2026-09-15 against official sources; examples below are application patterns, not an end-to-end cloud-tested adapter.
+OBS 资产传输在任务范围内时，配合[ModelArts 生产训练](modelarts-production.md)和[用户备份选择](artifact-backup.md)阅读。资料核对：2026-09-15。示例是应用层实现模式，尚不代表完整云端生产适配已实测。
 
-## Decide who moves each asset
+## 每类资产明确一个传输负责人
 
-| Mechanism | Contract |
+| 机制 | 必须明确的契约 |
 |---|---|
-| Platform input/output mapping | Record exact local paths, preparation/sync timing and terminal delivery status. Do not also MoXing-copy the same asset to the same destination. An exit-triggered output transfer cannot be verified from inside a process that has not exited; use an external platform/receipt check before downstream evaluation. |
-| Explicit MoXing staging/upload | Job-owned preparation and upload stages control immutable versions, cadence, progress and completion. Do not assume platform collection backs up paths outside its mapping. |
-| Shared persistent filesystem | Verify actual mount, lifetime, accessibility on all reader nodes and any OBS synchronization separately. A mount alone does not prove an OBS backup. |
+| 平台输入/输出映射 | 写清实际本地路径、准备/同步时机和最终交付状态。不要再用 MoXing 向同一目标重复复制。若平台在进程退出后上传，进程内无法提前证明上传完成，后续评估需等外部平台状态/回执核验。 |
+| 显式 MoXing 下载/上传 | 作业内的准备和上传阶段负责不可变版本、频率、进度及完成标记。不能假定未映射目录会被平台自动收集。 |
+| 共享持久文件系统 | 核对真实挂载、生命周期、所有读取节点可见性；如还需要 OBS 备份，独立确认同步状态。挂载成功不等于 OBS 已备份。 |
 
-Code, weights, data and features may use different mechanisms. Pick one delivery owner per asset/destination. Public-weight acquisition is a separate preparation task; production should consume pinned durable sources without the development laptop's relay.
+代码、权重、数据、特征可分别采用不同机制，但同一资产/目标只由一方交付。公网权重下载是独立准备任务；正式训练消费已固定版本的持久源，不依赖开发电脑中转。
 
-## Environment, permission and a small probe
+## 环境、权限与小型连通测试
 
-Use the already-working MoXing in the selected image. Record its installed version and interpreter; an import pass is not an OBS access pass. If absent, prepare a training-compatible image with a trusted, pinned MoXing distribution and dependencies before submission, rather than guessing a PyPI package or upgrading the platform torch tuple.
+优先复用选定镜像里已工作的 MoXing，记录安装版本和解释器；import 通过不代表 OBS 可读写。若缺失，先用可信、固定版本的 MoXing 安装包及依赖构建训练兼容镜像，不猜测 PyPI 包名，不升级平台 torch 组合。
 
-Huawei's [Framework introduction](https://support.huaweicloud.com/usermanual-standard-modelarts/modelarts_11_0001.html) distinguishes ordinary OBS object buckets from parallel filesystems and documents version-specific acceleration. Do not set old MA_MOXING_FWVER values universally, assume every custom image contains MoXing, or use this tutorial on a parallel filesystem without checking compatibility.
+官方[Framework 介绍](https://support.huaweicloud.com/usermanual-standard-modelarts/modelarts_11_0001.html)区分普通 OBS 对象桶与并行文件系统，并说明版本相关加速能力。不要把旧 MA_MOXING_FWVER 值当通用配置，不假定所有自定义镜像都自带 MoXing；并行文件系统需另核兼容性。
 
-Use the job's supported delegated/temporary credentials. A Notebook's successful login does not establish the training job's access. Check actual source read/list and destination write permissions, bucket policy, region/endpoint and credential renewal in the job environment. Never embed AK/SK or dump credentials. Official [job permission practice](https://support.huaweicloud.com/permission-modelarts/modelarts_24_00135.html) covers ListBucket/GetObject/PutObject delegation; extra multipart operations depend on the client and policy.
+使用作业支持的委托/临时凭证。Notebook 能访问不证明训练身份能访问。分别核对源读取/列举、目标写入、桶策略、区域/端点及作业内凭证续期，不写死 AK/SK、不输出凭证。官方[训练权限实践](https://support.huaweicloud.com/permission-modelarts/modelarts_24_00135.html)列出 ListBucket/GetObject/PutObject 委托，额外分片操作按实际客户端和策略确认。
 
-Within already-authorized output scope, read a small known source object and write/read a tiny uniquely named receipt in the run prefix. Do not test by copying full weights. Do not delete objects merely for cleanup unless authorized. On 403, fix permissions; on missing input, fix the manifest; on transient timeout, retry the exact owned transfer within a configured budget.
+在已有输出授权范围内，读取一个已知小对象，并在 run 前缀下写入/读回一个唯一的小回执即可，不用大权重测试连通。清理删除需要已有授权。403 优先修权限，缺失输入修清单；暂时性超时才按预算重试同一个已确认目标。
 
-## Copy basics
+## 基本复制用法
 
-The [MoXing file guide](https://support.huaweicloud.com/intl/zh-cn/develop-modelarts/develop-moxing-0002.html) supports file and directory copies. These are caller-provided paths in the resolved job configuration, not credentials:
+官方[MoXing 文件说明](https://support.huaweicloud.com/intl/zh-cn/develop-modelarts/develop-moxing-0002.html)支持单文件与目录复制。以下变量由解析后的作业配置提供，不含凭证：
 
 ```python
 import moxing as mox
 
-# One file: OBS to a local staging file.
+# 单文件：OBS 到本地临时文件。
 mox.file.copy(source_obs_file, local_staging_file)
-# Directory: OBS to an isolated, not-yet-ready local staging directory.
+# 目录：OBS 到隔离、尚未发布 READY 的本地临时目录。
 mox.file.copy_parallel(source_obs_directory, local_staging_directory,
                        threads=4, is_processing=False)
-# Upload a frozen directory to a new attempt-specific OBS prefix.
+# 上传冻结快照到本次 attempt 的全新 OBS 前缀。
 mox.file.copy_parallel(frozen_snapshot_directory, new_obs_prefix,
                        threads=4, is_processing=False)
 ```
 
-Four threads is only an example starting point. Account for nodes × copy workers × internal multipart concurrency; tune with a small representative transfer. [BrokenPipe guidance](https://support.huaweicloud.com/trouble-modelarts/modelarts_trouble_0042.html) documents excessive concurrency and large-file settings. Do not transplant its tuning values blindly. Copying is not an atomic directory transaction, and copy_parallel must not be advertised as guaranteed byte-offset resume.
+4 个线程只是示例起点。总并发考虑节点数 × 复制线程 × 内部分片并发，用小型代表性传输确定。[BrokenPipe 排障](https://support.huaweicloud.com/trouble-modelarts/modelarts_trouble_0042.html)说明了高并发及大文件参数，不要直接照搬其数值。目录复制不是原子事务，copy_parallel 也不能未经验证就宣传为字节级断点续传。
 
-## Staging and publishing examples
+## 下载与完整快照发布示例
 
-The following functions demonstrate a file download and a complete-snapshot upload using size checks. They do not implement distributed coordination, a resumable transfer queue, credentials or a timeout supervisor. The caller must provide those lifecycle controls. A same-size corruption will not be detected: use a trusted digest where the selected contract requires content verification. The [official file API](https://github.com/huaweicloud/ModelArts-Lab/blob/master/docs/moxing_api_doc/MoXing_API_File.md) documents get_size/read/write.
+下面两个函数演示单文件下载和完整快照上传，采用大小校验。它们不实现分布式协调、可恢复队列、鉴权或超时监督，调用方必须补齐这些生命周期控制。相同大小的内容损坏无法检出；契约要求内容校验时使用可信摘要。[官方文件 API](https://github.com/huaweicloud/ModelArts-Lab/blob/master/docs/moxing_api_doc/MoXing_API_File.md)说明了 get_size/read/write。
 
 ```python
 import json
@@ -96,37 +96,37 @@ def publish_snapshot(snapshot_dir, unique_obs_prefix, identity):
     return receipt
 ```
 
-Call download_file for files from a pinned manifest with model/revision, processors and feature-generation identity. Do not call publish_snapshot on the directory actively written by the trainer. For FSDP/ZeRO, gather or persist every required shard and metadata first; a rank-0-only snapshot is insufficient. Supply identity with run/attempt, checkpoint step, ordinary/EMA/resume role and source/config revision.
+download_file 的输入来自固定清单，包含模型/revision、processor、特征生成身份。publish_snapshot 不能指向 trainer 正在写入的目录。FSDP/ZeRO 先收集或持久化全部必需分片和元数据，不能只保存 rank 0。identity 至少包含 run/attempt、step、普通/EMA/续训用途及源码/配置版本。
 
-On an upload exception no valid completion marker is promised. The example deliberately refuses an existing prefix; inspect it and either resume missing files with a manifest-aware implementation or use a new attempt prefix. Never overwrite a committed prefix. A crash during marker publication requires reading/parsing the full marker and validating its referenced objects before acceptance.
+上传异常时不承诺存在有效完成标记。示例有意拒绝已有前缀；先核对，再用清单感知实现补传缺失文件，或另开 attempt 前缀，不覆盖已提交前缀。写标记过程中崩溃时，读取者必须解析完整标记并核对引用对象后才接受。
 
-For repeated transfers, use a ledger to reuse already verified complete files. Incomplete MoXing files may need to restart from the beginning unless the installed client's resume behavior has been verified. Preserve partial state for inspection; do not turn “exists” or “same total directory bytes” into a cache-valid decision.
+重复传输用台账复用已验证完整文件。除非验证过当前客户端的恢复行为，MoXing 未完成文件可能需要从头重传。保留部分状态供检查，不把“存在”或“目录总字节数相同”当作缓存有效。
 
-## Multi-node and training integration
+## 多节点与训练衔接
 
-For node-local caches, stage once **per node**, normally before that node launches workers. Global rank 0 alone cannot fill other nodes' disks. For truly shared storage, elect one writer with a real lock/lease and let all readers validate the same readiness record. A check-then-create OBS object is not a distributed lock.
+节点本地缓存要**每节点准备一次**，通常在该节点启动训练 worker 前完成；只让 global rank 0 下载不能填满其他节点磁盘。共享存储才由一个持真实锁/租约的写入者准备，所有读者核验同一完成记录。OBS 对象的“先判断不存在再创建”不是分布式锁。
 
-Use an identity-bound local READY record only after all required files pass the selected checks. Include source manifest identity, expected paths/count, sizes and verification strength. Other readers have bounded waits and a failure signal; no indefinite barrier if staging fails. With platform-per-worker launch, use one local staging owner plus a local lock and bounded failure propagation, not eight parallel copies.
+全部必需文件通过约定检查后才发布绑定资产身份的本地 READY，包含源清单身份、预期路径/数量、大小和校验强度。其他读者使用有界等待及失败信号，下载失败不能导致无限 barrier。平台逐 worker 启动时，使用节点内唯一下载者、本地锁和有界失败传播，不能 8 个 rank 同时复制。
 
-Checkpoint pipeline:
-1. Trainer finalizes an immutable snapshot; keep its files until the upload acknowledges them.
-2. Job-owned uploader copies to a unique run/attempt/step prefix, verifies files, and publishes COMMITTED.json last.
-3. Record local step, durable step, pending bytes, last success and first error. Update any “latest” pointer only after commit; resolve it to an immutable manifest for resume.
-4. Apply bounded queue/backpressure before pending snapshots fill local disk. Do not prune unacknowledged files. Deletion of older durable checkpoints follows the user's retention policy.
-5. On completion, drain selected uploads within the declared finalization budget. Record training, backup and evaluation status separately.
+checkpoint 流程：
+1. Trainer 完成不可变快照；上传确认前保留文件。
+2. 作业上传器写到独立 run/attempt/step 前缀，核验对象后最后发布 COMMITTED.json。
+3. 记录本地 step、持久 step、待传字节、最近成功及首个错误。提交完成后才能更新 latest 指针；恢复时将指针解析为不可变清单。
+4. 队列有上限，在待传快照占满磁盘前执行约定的背压策略。不能清理未确认快照；旧持久 checkpoint 删除遵守用户保留策略。
+5. 训练完成后，在预设收尾预算内排空已选上传，分别记录训练、备份与评估状态。
 
-Avoid per-step remote object reads in the training hot path unless remote streaming was deliberately benchmarked. Stage reusable features to appropriate local/shared storage when feasible. Feature manifests must preserve encoder identity, camera coverage, resolution/token shape, dtype, dataset split and preprocessing; matching filenames are not enough.
+除非明确测试过远端流式读取性能，不把每步 OBS 请求放进训练热路径；可复用特征优先放合适的本地/共享存储。特征清单保存 encoder 身份、相机覆盖、分辨率/token 形状、dtype、数据划分与预处理，不能只比文件名。
 
-## Exit policy must be decided before a non-interactive job
+## 非交互作业必须预先决定退出策略
 
-A process cannot promise to retain ephemeral files after the platform removes its container. “Exit nonzero and keep /cache” is therefore **not** a retention solution.
+平台移除容器后，进程不能保证临时文件仍存在。因此“非零退出并保留 /cache”**不是持久化方案**。
 
-For OBS-selected production runs, propose and record finalization timeout/retry budget and one of: a verified persistent spool for undelivered assets; a supported bounded container-retention period for recovery; or explicit acceptance of a possible unsaved tail. Do not silently choose the last option, wait forever for a human, or grant automatic resubmission authority.
+选择 OBS 的生产作业，提交前提出并记录最终上传超时/重试预算，以及以下方案之一：已验证的持久 spool 保存待传文件；平台支持的有界容器保留时间用于补救；或用户明确接受可能损失最后未保存部分。不能静默选最后一种，不能无限等待人工，也不因此获得自动重复提交作业的授权。
 
-If final delivery fails, preserve the training exit status plus a separate delivery failure; emit a failed overall result when durable delivery was required. Recovery is only possible from bytes that actually survived. Platform retention/retry timing must be verified for that job mode. Periodic committed checkpoints bound the loss window; they do not promise zero loss during a prolonged OBS outage.
+最终交付失败时，保留训练退出状态及独立交付失败；若持久交付是完成条件，整体结果失败。能恢复的仅是实际存活的文件。平台保留/重试时序需按本模式核对。周期性已提交 checkpoint 限制损失窗口，但 OBS 长时间不可用时不承诺零损失。
 
-For application-managed transfers, an overall success record requires training success and selected artifact commit, plus authorized evaluation success if evaluation is part of this job. For platform-managed post-exit transfer, record application completion first, then require external delivery confirmation before claiming overall completion or triggering consumers.
+应用自行上传时，整体成功要求训练成功、已选资产提交完成，以及属于本作业的已授权评估成功。平台退出后上传时，先记录应用完成，再由外部确认交付，之后才能声称整体完成或触发消费者。
 
-## Bounded acceptance
+## 有界验收
 
-Reuse existing evidence and verify only the changed integration: one small input to the actual job-local path; one real checkpoint committed to the chosen destination; and a fresh-job load of that committed checkpoint. Check ordinary/EMA distinction and restore training state if continuation is claimed. Local/mock tests do not prove cloud permissions, termination retention or production recovery.
+复用已有证据，仅检查变化的集成环节：小输入到实际作业路径；一份真实 checkpoint 提交到选定目标；新作业加载该已提交 checkpoint。核对普通/EMA 身份；声称续训时必须恢复训练状态。本地/模拟测试不证明云端权限、终止保留或生产恢复。

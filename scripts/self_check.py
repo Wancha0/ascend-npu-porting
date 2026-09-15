@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Offline, standard-library self-check for the portable Ascend porting kit."""
-
+"""离线检查随包工具；不联网、不导入 torch、不占用 NPU。"""
 from __future__ import annotations
 
-import hashlib
+import argparse
+import contextlib
 import io
 import json
 from pathlib import Path
@@ -13,468 +13,130 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from typing import Any
+import time
 from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parent.parent
-LINK_RE = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
-REQUIRED = (
-    "README.md",
-    "SKILL.md",
-    "PORTABLE_AGENT_GUIDE.md",
-    "assets/training-job/torchrun_npu.sh",
-    "references/agent-validation.md",
-    "references/compatibility-patterns.md",
-    "references/dependency-patch-delivery.md",
-    "references/glm-agent.md",
-    "references/minimax-h3-lessons.md",
-    "references/official-links.md",
-    "references/offline-handoff.md",
-    "references/porting-workflow.md",
-    "references/serving-readiness.md",
-    "references/ssh-execution.md",
-    "references/training-performance.md",
-    "references/training-readiness.md",
-    "references/training-job-lifecycle.md",
-    "scripts/manifest.py",
-    "scripts/probe_ascend_runtime.py",
-    "scripts/scan_npu_risks.py",
-    "scripts/self_check.py",
-    "scripts/ssh_script.py",
-    "scripts/validate_evidence.py",
-    "scripts/validate_patch_registry.py",
-)
 
 
-def run(argv: list[str], expected_gate: str | None = None) -> str | None:
-    try:
-        result = subprocess.run(
-            argv,
-            cwd=ROOT,
-            capture_output=True,
-            text=True,
-            timeout=30,
-            check=False,
-        )
-    except (OSError, subprocess.TimeoutExpired) as exc:
-        return f"cannot execute {argv[1]}: {exc}"
-    combined = result.stdout + result.stderr
-    if result.returncode != 0:
-        return f"command failed ({result.returncode}): {' '.join(argv)}\n{combined[-2000:]}"
-    if expected_gate is not None and expected_gate not in combined:
-        return f"command omitted {expected_gate}: {' '.join(argv)}"
-    return None
+def call(*argv, expected=0):
+    r = subprocess.run(list(argv), capture_output=True, text=True, timeout=20)
+    if r.returncode != expected:
+        raise AssertionError(f'退出码 {r.returncode}，预期 {expected}: {r.stderr[-1000:]}')
+    return r
 
 
-def run_expected_failure(argv: list[str], expected_text: str) -> str | None:
-    try:
-        result = subprocess.run(
-            argv,
-            cwd=ROOT,
-            capture_output=True,
-            text=True,
-            timeout=30,
-            check=False,
-        )
-    except (OSError, subprocess.TimeoutExpired) as exc:
-        return f"cannot execute expected-failure check {argv[1]}: {exc}"
-    combined = result.stdout + result.stderr
-    if result.returncode == 0:
-        return f"command unexpectedly succeeded: {' '.join(argv)}"
-    if expected_text not in combined:
-        return f"failed command omitted {expected_text}: {' '.join(argv)}\n{combined[-2000:]}"
-    return None
+def wait_result(run):
+    deadline = time.monotonic() + 10
+    while time.monotonic() < deadline:
+        path = run / 'result.json'
+        if path.exists():
+            return json.loads(path.read_text())
+        time.sleep(0.05)
+    raise AssertionError('监督器未在限定时间保存结果')
 
 
-def local_link_errors() -> list[str]:
-    errors: list[str] = []
-    for document in sorted(ROOT.rglob("*.md")):
-        if ".git" in document.parts:
-            continue
-        text = document.read_text(encoding="utf-8")
-        for raw in LINK_RE.findall(text):
-            target = raw.strip().strip("<>").split("#", 1)[0]
-            if not target or target.startswith(("http://", "https://", "mailto:")):
+def main():
+    errors, passed, skipped = [], [], []
+    required = ['SKILL.md', 'references/compatibility.md', 'references/validation.md',
+                'references/agent-handoff.md', 'references/tools.md', 'references/job-lifecycle.md',
+                'scripts/manifest.py', 'scripts/ssh_script.py', 'scripts/run_recorded.py',
+                'scripts/probe_ascend_runtime.py', 'scripts/scan_npu_risks.py']
+    for name in required:
+        if not (ROOT / name).is_file():
+            errors.append('缺少文件: ' + name)
+    for p in ROOT.rglob('*.md'):
+        for raw in re.findall(r'\[[^\]]*\]\(([^)]+)\)', p.read_text()):
+            link = raw.strip('<>').split('#')[0]
+            if not link or link.startswith(('https://', 'http://')):
                 continue
-            resolved = (document.parent / target).resolve()
-            try:
-                resolved.relative_to(ROOT)
-            except ValueError:
-                errors.append(f"link escapes toolkit: {document.relative_to(ROOT)} -> {raw}")
-                continue
-            if not resolved.exists():
-                errors.append(f"missing link: {document.relative_to(ROOT)} -> {raw}")
-    return errors
-
-
-def syntax_errors() -> list[str]:
-    errors: list[str] = []
-    for script in sorted((ROOT / "scripts").glob("*.py")):
+            target = (p.parent / link).resolve()
+            if ROOT not in target.parents or not target.exists():
+                errors.append(f'无效本地链接: {p.name} -> {link}')
+    for p in (ROOT / 'scripts').glob('*.py'):
         try:
-            compile(script.read_text(encoding="utf-8"), str(script), "exec")
-        except (OSError, SyntaxError) as exc:
-            errors.append(f"invalid Python script {script.name}: {exc}")
-    return errors
+            compile(p.read_text(), str(p), 'exec')
+            call(sys.executable, str(p), '--help') if p.name != 'self_check.py' else None
+        except Exception as e:
+            errors.append(f'{p.name}: {e}')
+    try:
+        with tempfile.TemporaryDirectory(prefix='npu-skill-check-') as temp:
+            tmp = Path(temp)
+            fixture = tmp / 'fixture'
+            fixture.mkdir()
+            (fixture / 'literal.txt').write_text('中文与字面字符 $HOME `echo x`\n')
+            (fixture / '._literal.txt').write_text('包装文件')
+            manifest = tmp / 'manifest.json'
+            tool = str(ROOT / 'scripts/manifest.py')
+            call(sys.executable, tool, 'create', str(fixture), '--output', str(manifest),
+                 '--exclude', '._*', '--exclude', '*/._*')
+            call(sys.executable, tool, 'verify', str(manifest), '--root', str(fixture))
+            (fixture / 'literal.txt').write_text('被修改')
+            changed = subprocess.run([sys.executable, tool, 'verify', str(manifest),
+                                      '--root', str(fixture)], capture_output=True, timeout=10)
+            assert changed.returncode != 0, 'manifest 没有发现内容篡改'
+            passed.append('manifest 校验及篡改检测')
+
+            (fixture / 'train.py').write_text('x = torch.randn(1).cuda()\n')
+            scan = call(sys.executable, str(ROOT / 'scripts/scan_npu_risks.py'), str(fixture))
+            assert 'hardcoded-cuda' in scan.stdout, '静态扫描未报告 CUDA 线索'
+            passed.append('静态扫描真实风险样例')
+
+            runner = str(ROOT / 'scripts/run_recorded.py')
+            for expected in (0, 37):
+                run = tmp / f'job-{expected}'
+                # start 进程退出后，独立监督器仍完成写文件与真实退出记录。
+                child = 'import time,sys; time.sleep(0.2); print("fixture-done"); sys.exit(%d)' % expected
+                call(sys.executable, runner, 'start', '--run-dir', str(run), '--cwd', str(tmp),
+                     '--', sys.executable, '-c', child)
+                record = wait_result(run)
+                assert record['status'] == 'exited' and record['exit_code'] == expected
+                assert 'fixture-done' in (run / 'output.log').read_text()
+                status = json.loads(call(sys.executable, runner, 'status', '--run-dir', str(run)).stdout)
+                assert status['exit_code'] == expected
+                call(sys.executable, runner, 'start', '--run-dir', str(run), '--cwd', str(tmp),
+                     '--', sys.executable, '-c', 'raise RuntimeError()', expected=2)
+            passed.append('控制端退出后真实 0/37 退出码持久记录、拒绝重复启动')
+
+            if shutil.which('bash') is None:
+                skipped.append('缺少本地 Bash，SSH 行为未验证')
+            else:
+                helper = runpy.run_path(str(ROOT / 'scripts/ssh_script.py'))
+                real_run = subprocess.run
+                calls = []
+                literal = "中文 '$HOME' $(echo unexpected) `echo unexpected`;\n第二行"
+
+                def fake_run(argv, **kwargs):
+                    if argv == ['bash', '-n']:
+                        return real_run(argv, **kwargs)
+                    assert argv[0] == 'ssh'
+                    calls.append(argv)
+                    result = real_run(['bash', '-s'], capture_output=True, timeout=5, **kwargs)
+                    assert result.stdout == literal
+                    return result
+
+                with patch.object(sys, 'argv', ['ssh_script.py', '--host', 'fixture.invalid',
+                                               '--env', 'NPU_FIXTURE=' + literal]), \
+                     patch.object(sys, 'stdin', io.StringIO('printf \'%s\' "$NPU_FIXTURE"\nexit 37\n')), \
+                     patch.object(subprocess, 'run', side_effect=fake_run):
+                    assert helper['main']() == 37
+                assert len(calls) == 1 and calls[0][-1] == 'bash -s'
+                with patch.object(sys, 'argv', ['ssh_script.py', '--host', 'fixture.invalid']), \
+                     patch.object(sys, 'stdin', io.StringIO('if then\n')), \
+                     patch.object(subprocess, 'run', side_effect=fake_run), \
+                     contextlib.redirect_stderr(io.StringIO()):
+                    assert helper['main']() != 0
+                assert len(calls) == 1, '错误脚本仍发起 SSH'
+                passed.append('模拟 SSH 字面值、非零退出保留、语法错误阻止执行')
+    except Exception as e:
+        errors.append(f'行为检查失败: {type(e).__name__}: {e}')
+    print(json.dumps({'status': 'pass' if not errors else 'fail', 'checks': passed,
+                      'skipped': skipped, 'errors': errors,
+                      'scope': '离线工具检查；不是 NPU 或模型验收'}, ensure_ascii=False, indent=2))
+    return 1 if errors else 0
 
 
-def ssh_fixture_errors(temp: Path, skipped_checks: list[str]) -> list[str]:
-    """Replace SSH before exercising the real helper and local Bash parser."""
-    if shutil.which("bash") is None:
-        skipped_checks.append("SSH helper behavior unverified: local Bash is unavailable")
-        return []
-    errors: list[str] = []
-    helper = runpy.run_path(str(ROOT / "scripts/ssh_script.py"))
-    real_run = subprocess.run
-    ssh_calls: list[tuple[list[str], dict[str, Any]]] = []
-    ssh_results: list[Any] = []
-
-    def fake_run(argv: list[str], **kwargs: Any) -> Any:
-        if argv == ["bash", "-n"]:
-            return real_run(argv, **kwargs)
-        if argv[0] != "ssh":
-            raise AssertionError("unexpected command in SSH self-check")
-        ssh_calls.append((argv, kwargs))
-        # Execute only the fixed local fixture body, never a network command.
-        result = real_run(["bash", "-s"], capture_output=True, timeout=10, **kwargs)
-        ssh_results.append(result)
-        return result
-
-    def invoke(options: list[str], body: str) -> tuple[int, str, str]:
-        stdout, stderr = io.StringIO(), io.StringIO()
-        with patch.object(sys, "argv", ["ssh_script.py"] + options), \
-                patch.object(sys, "stdin", io.StringIO(body)), \
-                patch.object(sys, "stdout", stdout), \
-                patch.object(sys, "stderr", stderr), \
-                patch.object(subprocess, "run", side_effect=fake_run):
-            try:
-                code = helper["main"]()
-            except SystemExit as exc:
-                code = int(exc.code)
-        return code, stdout.getvalue(), stderr.getvalue()
-
-    identity = temp / "identity with spaces"
-    identity.write_text("non-key fixture\n", encoding="utf-8")
-    private_marker = "private-fixture-do-not-log"
-    value = private_marker + " 'quote' \"double\" $HOME $(printf expanded) `printf expanded`; a=b\n第二行"
-    options = [
-        "--host", "fixture.invalid", "--user", "fixture-user", "--port", "2222",
-        "--identity", str(identity), "--connect-timeout", "7",
-        "--server-alive-interval", "9", "--host-key-policy", "yes",
-        "--env", "ASCEND_SSH_FIXTURE=" + value,
-    ]
-    expected_argv = [
-        "ssh", "-T", "-p", "2222", "-o", "BatchMode=yes",
-        "-o", "ConnectTimeout=7", "-o", "ServerAliveInterval=9",
-        "-o", "StrictHostKeyChecking=yes", "-i", str(identity),
-        "fixture-user@fixture.invalid", "bash -s",
-    ]
-    body = 'printf \'%s\' "$ASCEND_SSH_FIXTURE"\n'
-    code, stdout, stderr = invoke(options + ["--dry-run"], body)
-    if code != 0 or ssh_calls:
-        errors.append("SSH dry-run failed or invoked SSH")
-    else:
-        metadata = json.loads(stdout)
-        if metadata.get("argv") != expected_argv or metadata.get("syntax_checked") is not True:
-            errors.append("SSH dry-run lost target/options or syntax-check evidence")
-        if metadata.get("environment_names") != ["ASCEND_SSH_FIXTURE"] or private_marker in stdout + stderr:
-            errors.append("SSH dry-run exposed environment values or lost their names")
-
-    code, stdout, stderr = invoke(options, body)
-    if code != 0 or len(ssh_calls) != 1:
-        errors.append("SSH helper did not execute exactly once")
-    elif ssh_calls[0][0] != expected_argv or ssh_results[0].stdout != value:
-        errors.append("SSH argument array or literal environment round-trip changed")
-    if private_marker in stdout + stderr:
-        errors.append("SSH helper itself logged an environment value")
-
-    count = len(ssh_calls)
-    for syntax_options in (options, options + ["--dry-run"]):
-        code, stdout, stderr = invoke(syntax_options, "if then " + private_marker + "\n")
-        if code == 0 or len(ssh_calls) != count or "Bash syntax check failed" not in stderr:
-            errors.append("invalid Bash reached SSH or omitted its failure")
-        if private_marker in stdout + stderr:
-            errors.append("SSH syntax-failure diagnostic exposed script/environment content")
-
-    invalid_cases = (
-        (["--host=-oProxyCommand=bad"], "true\n"),
-        (["--host", "fixture.invalid", "--port", "0"], "true\n"),
-        (["--host", "fixture.invalid", "--port", "65536"], "true\n"),
-        (["--host", "fixture.invalid", "--identity", str(temp / "absent")], "true\n"),
-        (["--host", "fixture.invalid", "--identity", str(temp)], "true\n"),
-        (["--host", "fixture.invalid", "--env", "bad-name=" + value], "true\n"),
-        (["--host", "fixture.invalid", "--env", private_marker], "true\n"),
-        (["--host", "fixture.invalid", "--env", "ASCEND_SSH_FIXTURE=" + private_marker + "\0"], "true\n"),
-        (["--host", "fixture.invalid"], "\n"),
-        (["--host", "fixture.invalid"], "true\0\n"),
-    )
-    for invalid_options, invalid_body in invalid_cases:
-        code, stdout, stderr = invoke(invalid_options, invalid_body)
-        if code == 0 or len(ssh_calls) != count:
-            errors.append("invalid SSH input was accepted or invoked SSH")
-        if private_marker in stdout + stderr:
-            errors.append("SSH input validation exposed an environment value")
-
-    for failure_body, expected_code in (("exit 37\n", 37), ("false\nprintf unexpected\n", 1)):
-        count = len(ssh_calls)
-        code, _, _ = invoke(["--host", "fixture.invalid"], failure_body)
-        if code != expected_code or len(ssh_calls) != count + 1:
-            errors.append("SSH helper changed failure status or retried an execution")
-        elif ssh_results[-1].stdout:
-            errors.append("SSH strict mode continued after a failed command")
-    return errors
-
-
-def fixture_errors(skipped_checks: list[str]) -> list[str]:
-    errors: list[str] = []
-    for name in (
-        "manifest.py",
-        "probe_ascend_runtime.py",
-        "scan_npu_risks.py",
-        "ssh_script.py",
-        "validate_evidence.py",
-        "validate_patch_registry.py",
-    ):
-        error = run([sys.executable, str(ROOT / "scripts" / name), "--help"])
-        if error:
-            errors.append(error)
-    bash = shutil.which("bash")
-    if bash is not None:
-        error = run([bash, "-n", str(ROOT / "assets/training-job/torchrun_npu.sh")])
-        if error:
-            errors.append(error)
-    else:
-        skipped_checks.append("torchrun_npu.sh syntax unverified: local Bash is unavailable")
-    with tempfile.TemporaryDirectory(prefix="ascend-porting-self-check-") as raw_temp:
-        temp = Path(raw_temp)
-        errors.extend(ssh_fixture_errors(temp, skipped_checks))
-        fixture = temp / "fixture-repo"
-        fixture.mkdir()
-        (fixture / "train.py").write_text(
-            "import torch\nvalue = torch.zeros(1).cuda()\n", encoding="utf-8"
-        )
-        scan_output = temp / "scan.json"
-        error = run(
-            [
-                sys.executable,
-                str(ROOT / "scripts/scan_npu_risks.py"),
-                str(fixture),
-                "--output",
-                str(scan_output),
-            ],
-            "ASCEND_STATIC_INVENTORY_COMPLETE",
-        )
-        if error:
-            errors.append(error)
-        else:
-            scan = json.loads(scan_output.read_text(encoding="utf-8"))
-            if scan.get("counts_by_category", {}).get("hardcoded-cuda", 0) < 1:
-                errors.append("risk scanner missed the hardcoded CUDA fixture")
-
-        payload_root = temp / "payload"
-        payload_root.mkdir()
-        (payload_root / "sample.txt").write_text("manifest fixture\n", encoding="utf-8")
-        (payload_root / ".git").mkdir()
-        (payload_root / ".git/config").write_text("private remote fixture\n", encoding="utf-8")
-        (payload_root / "__pycache__").mkdir()
-        (payload_root / "__pycache__/sample.pyc").write_bytes(b"cache fixture")
-        (payload_root / ".DS_Store").write_bytes(b"metadata fixture")
-        manifest = temp / "MANIFEST.json"
-        for argv, gate in (
-            (
-                [
-                    sys.executable,
-                    str(ROOT / "scripts/manifest.py"),
-                    "create",
-                    str(payload_root),
-                    "--output",
-                    str(manifest),
-                ],
-                "ASCEND_MANIFEST_CREATE_PASS",
-            ),
-            (
-                [
-                    sys.executable,
-                    str(ROOT / "scripts/manifest.py"),
-                    "verify",
-                    str(manifest),
-                    "--root",
-                    str(payload_root),
-                ],
-                "ASCEND_MANIFEST_VERIFY_PASS",
-            ),
-        ):
-            error = run(argv, gate)
-            if error:
-                errors.append(error)
-
-        if manifest.is_file():
-            manifest_payload = json.loads(manifest.read_text(encoding="utf-8"))
-            manifest_paths = {item.get("path") for item in manifest_payload.get("entries", [])}
-            forbidden = {".git/config", "__pycache__/sample.pyc", ".DS_Store"}
-            leaked = sorted(forbidden & manifest_paths)
-            if leaked:
-                errors.append(f"manifest included default-excluded paths: {leaked}")
-
-        unsafe_root = temp / "unsafe-symlink-payload"
-        unsafe_root.mkdir()
-        try:
-            (unsafe_root / "escape").symlink_to("../outside")
-        except OSError:
-            pass
-        else:
-            error = run_expected_failure(
-                [
-                    sys.executable,
-                    str(ROOT / "scripts/manifest.py"),
-                    "create",
-                    str(unsafe_root),
-                    "--output",
-                    str(temp / "unsafe-manifest.json"),
-                ],
-                "unsafe symlink target",
-            )
-            if error:
-                errors.append(error)
-
-        source_root = temp / "dependency-source"
-        source_file = source_root / "package/device.py"
-        source_file.parent.mkdir(parents=True)
-        source_file.write_text("DEVICE = 'cuda'\n", encoding="utf-8")
-        patch_bundle = temp / "patch-bundle"
-        patch_file = patch_bundle / "patches/demo/0001-device.patch"
-        patch_file.parent.mkdir(parents=True)
-        patch_file.write_text("fixture patch\n", encoding="utf-8")
-        patch_registry = {
-            "schema_version": 1,
-            "project": "self-check-fixture",
-            "libraries": [
-                {
-                    "name": "demo",
-                    "source": "https://example.invalid/demo.git",
-                    "base_revision": "0" * 40,
-                    "license_reference": "Apache-2.0",
-                    "target_kind": "source-checkout",
-                    "base_files": [
-                        {
-                            "path": "package/device.py",
-                            "sha256": hashlib.sha256(source_file.read_bytes()).hexdigest(),
-                        }
-                    ],
-                    "patches": [
-                        {
-                            "path": "patches/demo/0001-device.patch",
-                            "size_bytes": patch_file.stat().st_size,
-                            "sha256": hashlib.sha256(patch_file.read_bytes()).hexdigest(),
-                        }
-                    ],
-                    "apply": "git apply --check PATCH && git apply PATCH",
-                    "revert": "git apply --check -R PATCH && git apply -R PATCH",
-                    "validation_commands": ["python3 -m pytest tests/test_device.py"],
-                }
-            ],
-        }
-        registry_path = patch_bundle / "dependency-patches.json"
-        registry_path.write_text(json.dumps(patch_registry), encoding="utf-8")
-        error = run(
-            [
-                sys.executable,
-                str(ROOT / "scripts/validate_patch_registry.py"),
-                str(registry_path),
-                "--bundle-root",
-                str(patch_bundle),
-                "--source",
-                f"demo={source_root}",
-                "--require-base",
-            ],
-            "ASCEND_PATCH_REGISTRY_VALID",
-        )
-        if error:
-            errors.append(error)
-        patch_file.write_text("tampered fixture patch\n", encoding="utf-8")
-        error = run_expected_failure(
-            [
-                sys.executable,
-                str(ROOT / "scripts/validate_patch_registry.py"),
-                str(registry_path),
-                "--bundle-root",
-                str(patch_bundle),
-            ],
-            "ASCEND_PATCH_REGISTRY_INVALID",
-        )
-        if error:
-            errors.append(error)
-
-        evidence_root = temp / "returned"
-        log = evidence_root / "logs/smoke.log"
-        log.parent.mkdir(parents=True)
-        log.write_text("ASCEND_RUNTIME_PROBE_PASS\n", encoding="utf-8")
-        evidence: dict[str, Any] = {
-            "schema_version": 1,
-            "project": "self-check-fixture",
-            "source_revision": "0" * 40,
-            "target_outcome": "runtime-ready",
-            "status": "pass",
-            "gate": "ASCEND_RUNTIME_PROBE_PASS",
-            "runtime": {"fixture": True},
-            "checks": [
-                {
-                    "name": "fixture",
-                    "status": "pass",
-                    "command": "fixture",
-                    "exit_code": 0,
-                    "gate": "ASCEND_RUNTIME_PROBE_PASS",
-                    "artifacts": ["logs/smoke.log"],
-                }
-            ],
-            "artifacts": [
-                {
-                    "path": "logs/smoke.log",
-                    "size_bytes": log.stat().st_size,
-                    "sha256": hashlib.sha256(log.read_bytes()).hexdigest(),
-                }
-            ],
-            "failures": [],
-        }
-        evidence_path = temp / "evidence.json"
-        evidence_path.write_text(json.dumps(evidence), encoding="utf-8")
-        error = run(
-            [
-                sys.executable,
-                str(ROOT / "scripts/validate_evidence.py"),
-                str(evidence_path),
-                "--artifact-root",
-                str(evidence_root),
-            ],
-            "ASCEND_HANDOFF_EVIDENCE_VALID",
-        )
-        if error:
-            errors.append(error)
-    return errors
-
-
-def main() -> int:
-    skipped_checks: list[str] = []
-    errors = [f"missing required file: {relative}" for relative in REQUIRED if not (ROOT / relative).is_file()]
-    errors.extend(local_link_errors())
-    errors.extend(syntax_errors())
-    if not errors:
-        errors.extend(fixture_errors(skipped_checks))
-    result = {
-        "status": "pass" if not errors else "fail",
-        "toolkit_root": str(ROOT),
-        "python": sys.version.split()[0],
-        "required_file_count": len(REQUIRED),
-        "skipped_checks": skipped_checks,
-        "errors": errors,
-    }
-    print(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True))
-    if errors:
-        print("ASCEND_SKILL_SELF_CHECK_FAIL", file=sys.stderr)
-        return 1
-    print("ASCEND_SKILL_SELF_CHECK_PASS")
-    return 0
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
+    argparse.ArgumentParser(description=__doc__).parse_args()
     raise SystemExit(main())

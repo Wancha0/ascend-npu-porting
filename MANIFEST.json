@@ -2,23 +2,37 @@
   "entries": [
     {
       "mode": "0644",
+      "path": ".gitignore",
+      "sha256": "94e7be7c673ce62c9477a6b7cce0fe3824fc25df85254946f9404d6848fdf7bb",
+      "size_bytes": 81,
+      "type": "file"
+    },
+    {
+      "mode": "0644",
       "path": "README.md",
-      "sha256": "31626bc23957a2a5344e1933c1fe552d4a94f80fde97bd0ef371f5e899bf5b72",
-      "size_bytes": 5501,
+      "sha256": "55f78ecb7b09a0431bb8c1a3f6a7ad73f2d22124fdfbfff0f00f0faddfa8f893",
+      "size_bytes": 1528,
       "type": "file"
     },
     {
       "mode": "0644",
       "path": "SKILL.md",
-      "sha256": "3e23a73385ed63cc75aa79efd73918f0df8930d14ae68a1e30bf5f2e73f3e857",
-      "size_bytes": 9796,
+      "sha256": "f087e53f2356d9a421e1a75befed4700eae9b7ebfb427635b86b0e7e040b74ff",
+      "size_bytes": 4280,
       "type": "file"
     },
     {
       "mode": "0644",
       "path": "agents/openai.yaml",
-      "sha256": "7b4d41124d46542d829b7897adf007985badaa2124c91d67c389392311513b18",
-      "size_bytes": 305,
+      "sha256": "98a243940ede511709e4d5311028dba02aeccaca7cb7fdef59d1829242379c6c",
+      "size_bytes": 297,
+      "type": "file"
+    },
+    {
+      "mode": "0644",
+      "path": "references/agent-handoff.md",
+      "sha256": "65c8eb01ef38c2b27b8a190876fdb93559e11b3041dfe4efe6d93f9eb85995fa",
+      "size_bytes": 2014,
       "type": "file"
     },
     {
@@ -38,8 +52,8 @@
     {
       "mode": "0644",
       "path": "references/fast-training.md",
-      "sha256": "48ecd010deccd4f066ae000a902afba87287fa3b2f5d8eb73959a3e3459bad99",
-      "size_bytes": 3785,
+      "sha256": "a485f33ce1cd7dd060402c1000b9590e899f0937af0e9090fea6e8bf8907269c",
+      "size_bytes": 3792,
       "type": "file"
     },
     {
@@ -47,13 +61,6 @@
       "path": "references/fastwam-lessons.md",
       "sha256": "9b1565440fb1ebf5d62e12140ef958fd2ff2b017045cdb558360c4e2af3bc80e",
       "size_bytes": 3563,
-      "type": "file"
-    },
-    {
-      "mode": "0644",
-      "path": "references/glm-handoff.md",
-      "sha256": "c478ef04d3e85d09c8962d21ffb341ed1c652d2d972100ba48c109f96ce4811b",
-      "size_bytes": 5767,
       "type": "file"
     },
     {
@@ -136,8 +143,8 @@
     {
       "mode": "0644",
       "path": "scripts/self_check.py",
-      "sha256": "dd6b3ec8ce7cdec55aa62e02957606a2b60e64db37480b930ec192a692258093",
-      "size_bytes": 7033,
+      "sha256": "6af52496b3de50593002a78f4ddf62404df86d1728ab5deddc51052305a6b632",
+      "size_bytes": 7035,
       "type": "file"
     },
     {
@@ -148,7 +155,7 @@
       "type": "file"
     }
   ],
-  "entry_count": 21,
+  "entry_count": 22,
   "excludes": [
     ".git",
     "*/.git",
@@ -169,9 +176,9 @@
     ".DS_Store",
     "*/.DS_Store"
   ],
-  "generated_at": "2026-09-15T10:26:36.912518Z",
+  "generated_at": "2026-09-15T10:57:17.981795Z",
   "hash_algorithm": "sha256",
-  "root_name": "ascend-npu-porting-zh",
+  "root_name": "toolkit-zh-release",
   "schema_version": 1,
-  "total_file_bytes": 131203
+  "total_file_bytes": 118043
 }

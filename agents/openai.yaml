@@ -1,4 +1,4 @@
 interface:
-  display_name: "Ascend NPU Porting"
-  short_description: "Port, validate, and tune PyTorch on Ascend NPU"
-  default_prompt: "Use $ascend-npu-porting to adapt this PyTorch codebase for Ascend NPU, prove the requested readiness gates, and profile or tune training performance when requested."
+  display_name: "昇腾 NPU 适配"
+  short_description: "供 GPT 和 GLM 执行真实模型 NPU 适配、正式训练及 OBS 资产交付"
+  default_prompt: "使用 $ascend-npu-porting 完成本项目的昇腾 NPU 适配，按真实任务验证并记录训练与资产保存结果。"
