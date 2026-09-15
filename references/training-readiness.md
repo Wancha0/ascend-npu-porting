@@ -80,6 +80,13 @@ Use periodic checkpoints and a retention policy sized for the actual model and
 optimizer state. Verify the locally written checkpoint's size/hash and strict
 reload; remote persistence is outside this code-adaptation workflow.
 
+For mid-epoch resume, compare consumed sample IDs with an uninterrupted run:
+the prefix before save plus the suffix after restore must match the original
+order without omissions or duplicates. A sampler's yielded cursor may include
+prefetched, untrained batches; checkpoint the consumed position and preserve
+the current permutation. Test through the prepared production DataLoader as
+well as any sampler helper, since prefetching can change where the two diverge.
+
 ## Distributed gates
 
 Run in this order:

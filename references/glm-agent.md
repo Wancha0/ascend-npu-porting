@@ -4,6 +4,16 @@ Use this reference when GLM is the model executing the port. The NPU workflow
 and evidence gates do not change; this file only makes the agent-host contract
 explicit.
 
+For a requested independent-execution experiment, also read
+[agent-validation.md](agent-validation.md). Its fresh replay and intervention
+record distinguish an independently completed port from an assisted development
+run. Host compatibility has to be tested on the intended deployment host.
+
+When the user authorizes reuse of earlier MiniMax-H3 experience, also read
+[minimax-h3-lessons.md](minimax-h3-lessons.md). Record that input in the experiment
+contract and map each reused lesson to current source and tests. This permission
+does not turn an earlier model's results into current acceptance evidence.
+
 ## Distinguish the model from the host
 
 GLM can run behind Claude Code, OpenCode, OpenClaw, Cline, Roo Code, Kilo Code,
@@ -43,6 +53,58 @@ explicitly instruct it to read `SKILL.md`, this file, and every routed reference
 in full. Do not translate the workflow into host-only tool names or assume MCP,
 plugins, or Codex metadata.
 
+## Portable shell and diagnostic output
+
+Check the controller's actual shell. A Linux target does not make the local
+shell Bash. Put multi-line orchestration in a script and execute it explicitly
+with Bash after `bash -n SCRIPT`. For remote execution, use the bundled
+`scripts/ssh_script.py` following [ssh-execution.md](ssh-execution.md); it checks
+syntax and sends the script through stdin with argument-array SSH invocation.
+When Python generates a script, create its source file through the host's
+file-editing capability (for example, `apply_patch` when available), then run
+that file instead of nesting another heredoc inside a shell string.
+Use argument arrays for dynamic values and nested SSH. Avoid reserved
+variable names such as zsh's `status`; use `gate_exit` or `probe_exit`. Bash
+`PIPESTATUS` is not portable to zsh. Capture command output to a unique log and
+save its exit code before any subsequent command changes it. Keep failed
+attempts rather than overwriting their logs on retry.
+
+An explicit Bash interpreter does not make controller utilities GNU versions.
+For portable file inventories, use Python `pathlib` or probe supported options;
+macOS `find` does not support GNU `-printf`. Under `pipefail`, an early-exiting
+consumer such as `grep -q` or `head` can give the producer SIGPIPE and turn a
+successful match into a failed pipeline. Capture the producer output and exit
+status first, then inspect the completed file for the expected gate.
+
+Read one document or a bounded line range per tool call, sized to the host's
+output limit. If a result is truncated, read the missing ranges; do not keep
+concatenating all references into another truncated result.
+For a known artifact, read its named manifest or evidence record first. Avoid
+recursive content searches through raw event logs, downloads, and archives;
+one matching JSONL record can return an entire earlier tool output. Locate
+candidate filenames, then select the required JSON fields or bounded log range.
+
+Diagnostics must not collect credentials incidentally. For broad process
+inventory use fields such as `pid,ppid,user,stat,etime,comm`; omit `args` and
+`command`. Jupyter and other services can carry authentication tokens in their
+command line. Do not dump `env`, `/proc/*/environ`, credential files, or full
+command lines. Query only named non-secret topology variables. If a specific
+owned process needs more detail, filter sensitive fields before storing or
+returning its output, not after sending the log to the model. Public evidence
+must be reviewed and redacted independently of its validity/hash checks.
+
+Probe the type of metadata paths before using them: a rank-table environment
+variable may point to a directory rather than a JSON file. Inspect the parsed
+JSON root and the producing code before assuming a mapping, list, or array;
+validate the actual schema instead of guessing wrapper keys. Check data API
+return types before array arithmetic, and preserve the failed validator's log
+when reusing an already-produced artifact. Treat missing optional discovery
+inputs as such; mandatory identity/runtime failures must not be hidden by a
+final echo or an unrelated command that exits zero.
+Parse manifests according to their schema: distinguish entries from documented
+comments and headers, reject malformed entries, and compare entry counts and
+file identities. Physical line count is not an artifact count.
+
 ## Keep long work resumable
 
 GLM must store progress in the run directory rather than relying on chat
@@ -55,10 +117,41 @@ memory. Maintain a small ledger containing:
 - changed files and why each change exists;
 - current failure, next smallest gate, and rollback.
 
+Update the ledger after each completed logical gate and before a long-running
+operation. For an active operation, record the owned process/session identity,
+destination, log, and completion check before waiting. Keep full logs on disk;
+return the exit status, gate, and relevant error excerpt to the model. Batch
+independent read-only probes, and restrict source scans to the executed path.
+These reduce repeated context without weakening the actual tests.
+
 After any context reset, re-read `SKILL.md`, the routed references, and this
 ledger before acting. Re-probe mutable target state such as free devices,
 processes, ports, IP addresses, and local paths. Do not repeat a mutation merely
 because the preceding chat is missing.
+
+If the ledger predates the final tool calls, reconcile it with the raw events
+and expected artifacts first. A reviewer-written continuation note must identify
+its author and evidence; it is not a GLM-authored ledger or a passed gate. Reuse
+unchanged, previously verified original assets with their verification records;
+check identity/existence and rehash if they changed or integrity is uncertain.
+Do not download or hash the same large files again solely because a session
+ended. A prepared archive is not evidence that the target received it.
+
+Record how source was deployed. An extracted source archive may intentionally
+lack `.git`; do not run remote Git assertions unless metadata was included.
+Link the controller revision and patch to a relative-path/content-hash manifest,
+then verify the deployed project files against that manifest. Declare exclusions
+for generated bytecode or packaging metadata explicitly; do not exclude project
+files to make a mismatch disappear. The manifest generator/verifier in this
+toolkit accepts a directory root and declared exclusion patterns.
+
+When a provider rejects a request for quota, preserve the raw error and stop
+the failed agent session. Distinguish account balance, resource packages,
+endpoint entitlement, and transient rate limits from current evidence. An old
+balance page or the absence of a subscription alone does not diagnose the
+failure. Do not loop paid probes after a current zero balance is confirmed.
+Continue from the saved state once access is restored; do not switch the
+adapting model or buy credit without user authorization.
 
 ## Composite-source rule
 
@@ -77,11 +170,22 @@ Never overwrite one branch with another to make a synthetic checkout. Scan only
 the nodes and paths reachable from the requested entrypoint; repository-wide
 CUDA matches are an inventory, not a to-do list.
 
+Rebuild this graph from the pinned source revision on every new experiment.
+A historical example may have split launchers across branches that a later
+revision consolidates. Check current paths and imports before adding another
+checkout. Re-read checkpoint, cache, and audio/token contracts when the source
+changes; a previously valid cache can encode a different execution contract.
+
 ## ActionWM PAC ControlNet audit case
 
 The ActionWM example supplied during the toolkit audit demonstrates why this
 gate is mandatory. Treat the following revisions as evidence for that audit,
 not as a promise that the external repository remains publicly accessible:
+
+This is a historical audit, not a current checkout recipe. The source revisions
+below establish only their own layout and behavior. For newer revisions,
+derive the source graph and contracts again; do not require two branches or
+silent audio merely because this example used them.
 
 - `diffsynth-pac-controlnet` at audit revision
   `8998f3746c51637feaef2f490765773d17cd8fdc` is the modified DiffSynth library.
@@ -94,8 +198,8 @@ not as a promise that the external repository remains publicly accessible:
 - The library already contains NPU device helpers and optional TorchNPU
   dependencies, but that does not prove this PAC training path.
 
-A capable GLM host should build and validate the composed project, then triage
-these first-order blockers before broad edits:
+At those audit revisions, a capable GLM host should build and validate the
+composed project, then triage these first-order blockers before broad edits:
 
 1. The recommended H20 path loads a pre-quantized bitsandbytes NF4 host. Treat
    it as CUDA-specific until a representative NPU load and forward proves
@@ -124,10 +228,11 @@ copy of `site-packages`. If it must create or operate a training job, it must us
 submission.
 
 With repository access but no Ascend target or artifacts, GLM can produce a
-reviewed **prepared** patch bundle. With a shell-capable host, both source
-branches, local weights/data, and target access, the skill gives GLM enough
-instructions to attempt and evidence an end-to-end port. It still cannot claim
-training readiness until the target gates pass.
+reviewed **prepared** patch bundle. With a shell-capable host, the complete
+source graph for the pinned revision, local weights/data, and target access,
+GLM can attempt and evidence an end-to-end port. This describes prerequisites,
+not a measured success rate. Training readiness and independent completion
+remain unproven until their respective target and replay gates pass.
 
 ## Prompt template for GLM
 

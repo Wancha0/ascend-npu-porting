@@ -16,6 +16,13 @@ to inventory whether required artifacts already exist locally, record their
 path/hash/interface contracts, and continue with source adaptation. Never turn
 that inventory into an unrequested transfer operation.
 
+For remote training or substantial feature extraction, explicitly establish
+whether outputs will be backed up to OBS; a local checkpoint is not a backup.
+Read [references/artifact-backup.md](references/artifact-backup.md), prepare a
+concrete asset/destination/cadence proposal, and let the user choose unless an
+applicable choice is already recorded. This storage decision does not authorize
+unrequested transfers or block independent source adaptation and bounded tests.
+
 This repository is an agent-neutral Markdown and Python toolkit. It must not
 depend on Codex, MCP, chat history, or a proprietary orchestration API to carry
 out the port. On another computer or with a different coding agent, begin with
@@ -26,6 +33,20 @@ OpenCode, OpenClaw, Cline, Roo Code, Cursor, or another host, also read
 [references/glm-agent.md](references/glm-agent.md). The host's tools and
 permissions—not the GLM model name—determine whether direct or handoff mode is
 possible.
+
+For multiline remote Bash, use the bundled `scripts/ssh_script.py` and read
+[references/ssh-execution.md](references/ssh-execution.md). It validates locally
+and sends scripts through SSH stdin without a user-specific skill dependency.
+
+When the requested result is proof that another agent can complete the port
+independently, use [references/agent-validation.md](references/agent-validation.md).
+Ordinary porting does not require this experiment. A portable guide, helper
+self-check, or reviewer-written patch alone cannot establish agent independence.
+
+For authorized reuse of prior MiniMax-H3 work, read
+[references/minimax-h3-lessons.md](references/minimax-h3-lessons.md). It separates
+historical inference/training operator results from the current model's gates;
+do not copy a past multi-card serving configuration into a single-card task.
 
 ## Choose the operating mode
 
@@ -163,6 +184,8 @@ Adapt the list to the repository, but normally leave:
   expected gates, official reference links, cleanup, and known limitations;
 - machine-readable evidence containing source revision, patch hashes, runtime
   versions, exercised code paths, topology, metrics, artifacts, and failures.
+- for remote production jobs, the recorded backup choice and per-asset local,
+  OBS upload, and verification status, including omissions and pending failures;
 - for performance work, a baseline-versus-final report containing the frozen
   workload, warmup/measurement windows, repeat runs, throughput/step-time/HBM,
   bottleneck attribution, accepted and rejected changes, and rollback paths.

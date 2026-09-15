@@ -4,14 +4,17 @@
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 from pathlib import Path
 import re
+import runpy
 import shutil
 import subprocess
 import sys
 import tempfile
 from typing import Any
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -21,13 +24,16 @@ REQUIRED = (
     "SKILL.md",
     "PORTABLE_AGENT_GUIDE.md",
     "assets/training-job/torchrun_npu.sh",
+    "references/agent-validation.md",
     "references/compatibility-patterns.md",
     "references/dependency-patch-delivery.md",
     "references/glm-agent.md",
+    "references/minimax-h3-lessons.md",
     "references/official-links.md",
     "references/offline-handoff.md",
     "references/porting-workflow.md",
     "references/serving-readiness.md",
+    "references/ssh-execution.md",
     "references/training-performance.md",
     "references/training-readiness.md",
     "references/training-job-lifecycle.md",
@@ -35,6 +41,7 @@ REQUIRED = (
     "scripts/probe_ascend_runtime.py",
     "scripts/scan_npu_risks.py",
     "scripts/self_check.py",
+    "scripts/ssh_script.py",
     "scripts/validate_evidence.py",
     "scripts/validate_patch_registry.py",
 )
@@ -111,12 +118,120 @@ def syntax_errors() -> list[str]:
     return errors
 
 
-def fixture_errors() -> list[str]:
+def ssh_fixture_errors(temp: Path, skipped_checks: list[str]) -> list[str]:
+    """Replace SSH before exercising the real helper and local Bash parser."""
+    if shutil.which("bash") is None:
+        skipped_checks.append("SSH helper behavior unverified: local Bash is unavailable")
+        return []
+    errors: list[str] = []
+    helper = runpy.run_path(str(ROOT / "scripts/ssh_script.py"))
+    real_run = subprocess.run
+    ssh_calls: list[tuple[list[str], dict[str, Any]]] = []
+    ssh_results: list[Any] = []
+
+    def fake_run(argv: list[str], **kwargs: Any) -> Any:
+        if argv == ["bash", "-n"]:
+            return real_run(argv, **kwargs)
+        if argv[0] != "ssh":
+            raise AssertionError("unexpected command in SSH self-check")
+        ssh_calls.append((argv, kwargs))
+        # Execute only the fixed local fixture body, never a network command.
+        result = real_run(["bash", "-s"], capture_output=True, timeout=10, **kwargs)
+        ssh_results.append(result)
+        return result
+
+    def invoke(options: list[str], body: str) -> tuple[int, str, str]:
+        stdout, stderr = io.StringIO(), io.StringIO()
+        with patch.object(sys, "argv", ["ssh_script.py"] + options), \
+                patch.object(sys, "stdin", io.StringIO(body)), \
+                patch.object(sys, "stdout", stdout), \
+                patch.object(sys, "stderr", stderr), \
+                patch.object(subprocess, "run", side_effect=fake_run):
+            try:
+                code = helper["main"]()
+            except SystemExit as exc:
+                code = int(exc.code)
+        return code, stdout.getvalue(), stderr.getvalue()
+
+    identity = temp / "identity with spaces"
+    identity.write_text("non-key fixture\n", encoding="utf-8")
+    private_marker = "private-fixture-do-not-log"
+    value = private_marker + " 'quote' \"double\" $HOME $(printf expanded) `printf expanded`; a=b\n第二行"
+    options = [
+        "--host", "fixture.invalid", "--user", "fixture-user", "--port", "2222",
+        "--identity", str(identity), "--connect-timeout", "7",
+        "--server-alive-interval", "9", "--host-key-policy", "yes",
+        "--env", "ASCEND_SSH_FIXTURE=" + value,
+    ]
+    expected_argv = [
+        "ssh", "-T", "-p", "2222", "-o", "BatchMode=yes",
+        "-o", "ConnectTimeout=7", "-o", "ServerAliveInterval=9",
+        "-o", "StrictHostKeyChecking=yes", "-i", str(identity),
+        "fixture-user@fixture.invalid", "bash -s",
+    ]
+    body = 'printf \'%s\' "$ASCEND_SSH_FIXTURE"\n'
+    code, stdout, stderr = invoke(options + ["--dry-run"], body)
+    if code != 0 or ssh_calls:
+        errors.append("SSH dry-run failed or invoked SSH")
+    else:
+        metadata = json.loads(stdout)
+        if metadata.get("argv") != expected_argv or metadata.get("syntax_checked") is not True:
+            errors.append("SSH dry-run lost target/options or syntax-check evidence")
+        if metadata.get("environment_names") != ["ASCEND_SSH_FIXTURE"] or private_marker in stdout + stderr:
+            errors.append("SSH dry-run exposed environment values or lost their names")
+
+    code, stdout, stderr = invoke(options, body)
+    if code != 0 or len(ssh_calls) != 1:
+        errors.append("SSH helper did not execute exactly once")
+    elif ssh_calls[0][0] != expected_argv or ssh_results[0].stdout != value:
+        errors.append("SSH argument array or literal environment round-trip changed")
+    if private_marker in stdout + stderr:
+        errors.append("SSH helper itself logged an environment value")
+
+    count = len(ssh_calls)
+    for syntax_options in (options, options + ["--dry-run"]):
+        code, stdout, stderr = invoke(syntax_options, "if then " + private_marker + "\n")
+        if code == 0 or len(ssh_calls) != count or "Bash syntax check failed" not in stderr:
+            errors.append("invalid Bash reached SSH or omitted its failure")
+        if private_marker in stdout + stderr:
+            errors.append("SSH syntax-failure diagnostic exposed script/environment content")
+
+    invalid_cases = (
+        (["--host=-oProxyCommand=bad"], "true\n"),
+        (["--host", "fixture.invalid", "--port", "0"], "true\n"),
+        (["--host", "fixture.invalid", "--port", "65536"], "true\n"),
+        (["--host", "fixture.invalid", "--identity", str(temp / "absent")], "true\n"),
+        (["--host", "fixture.invalid", "--identity", str(temp)], "true\n"),
+        (["--host", "fixture.invalid", "--env", "bad-name=" + value], "true\n"),
+        (["--host", "fixture.invalid", "--env", private_marker], "true\n"),
+        (["--host", "fixture.invalid", "--env", "ASCEND_SSH_FIXTURE=" + private_marker + "\0"], "true\n"),
+        (["--host", "fixture.invalid"], "\n"),
+        (["--host", "fixture.invalid"], "true\0\n"),
+    )
+    for invalid_options, invalid_body in invalid_cases:
+        code, stdout, stderr = invoke(invalid_options, invalid_body)
+        if code == 0 or len(ssh_calls) != count:
+            errors.append("invalid SSH input was accepted or invoked SSH")
+        if private_marker in stdout + stderr:
+            errors.append("SSH input validation exposed an environment value")
+
+    for failure_body, expected_code in (("exit 37\n", 37), ("false\nprintf unexpected\n", 1)):
+        count = len(ssh_calls)
+        code, _, _ = invoke(["--host", "fixture.invalid"], failure_body)
+        if code != expected_code or len(ssh_calls) != count + 1:
+            errors.append("SSH helper changed failure status or retried an execution")
+        elif ssh_results[-1].stdout:
+            errors.append("SSH strict mode continued after a failed command")
+    return errors
+
+
+def fixture_errors(skipped_checks: list[str]) -> list[str]:
     errors: list[str] = []
     for name in (
         "manifest.py",
         "probe_ascend_runtime.py",
         "scan_npu_risks.py",
+        "ssh_script.py",
         "validate_evidence.py",
         "validate_patch_registry.py",
     ):
@@ -128,8 +243,11 @@ def fixture_errors() -> list[str]:
         error = run([bash, "-n", str(ROOT / "assets/training-job/torchrun_npu.sh")])
         if error:
             errors.append(error)
+    else:
+        skipped_checks.append("torchrun_npu.sh syntax unverified: local Bash is unavailable")
     with tempfile.TemporaryDirectory(prefix="ascend-porting-self-check-") as raw_temp:
         temp = Path(raw_temp)
+        errors.extend(ssh_fixture_errors(temp, skipped_checks))
         fixture = temp / "fixture-repo"
         fixture.mkdir()
         (fixture / "train.py").write_text(
@@ -336,16 +454,18 @@ def fixture_errors() -> list[str]:
 
 
 def main() -> int:
+    skipped_checks: list[str] = []
     errors = [f"missing required file: {relative}" for relative in REQUIRED if not (ROOT / relative).is_file()]
     errors.extend(local_link_errors())
     errors.extend(syntax_errors())
     if not errors:
-        errors.extend(fixture_errors())
+        errors.extend(fixture_errors(skipped_checks))
     result = {
         "status": "pass" if not errors else "fail",
         "toolkit_root": str(ROOT),
         "python": sys.version.split()[0],
         "required_file_count": len(REQUIRED),
+        "skipped_checks": skipped_checks,
         "errors": errors,
     }
     print(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True))

@@ -1,0 +1,163 @@
+{
+  "entries": [
+    {
+      "mode": "0644",
+      "path": "README.md",
+      "sha256": "31626bc23957a2a5344e1933c1fe552d4a94f80fde97bd0ef371f5e899bf5b72",
+      "size_bytes": 5501,
+      "type": "file"
+    },
+    {
+      "mode": "0644",
+      "path": "SKILL.md",
+      "sha256": "c57593e2d6f0924ed2aa91f7c6d165516f27d5c22b43258838d0f1d56402c4a2",
+      "size_bytes": 9508,
+      "type": "file"
+    },
+    {
+      "mode": "0644",
+      "path": "agents/openai.yaml",
+      "sha256": "7b4d41124d46542d829b7897adf007985badaa2124c91d67c389392311513b18",
+      "size_bytes": 305,
+      "type": "file"
+    },
+    {
+      "mode": "0644",
+      "path": "references/artifact-backup.md",
+      "sha256": "b31ec20646286df6c59555749888153bb0eea831848b0d97c2b76a543359a5c8",
+      "size_bytes": 4504,
+      "type": "file"
+    },
+    {
+      "mode": "0644",
+      "path": "references/compatibility.md",
+      "sha256": "fc83c364982164b4f818cedc4b33e3ffd3a21d477f380d69a0247da195e3045f",
+      "size_bytes": 6269,
+      "type": "file"
+    },
+    {
+      "mode": "0644",
+      "path": "references/fast-training.md",
+      "sha256": "48ecd010deccd4f066ae000a902afba87287fa3b2f5d8eb73959a3e3459bad99",
+      "size_bytes": 3785,
+      "type": "file"
+    },
+    {
+      "mode": "0644",
+      "path": "references/fastwam-lessons.md",
+      "sha256": "9b1565440fb1ebf5d62e12140ef958fd2ff2b017045cdb558360c4e2af3bc80e",
+      "size_bytes": 3563,
+      "type": "file"
+    },
+    {
+      "mode": "0644",
+      "path": "references/glm-handoff.md",
+      "sha256": "c478ef04d3e85d09c8962d21ffb341ed1c652d2d972100ba48c109f96ce4811b",
+      "size_bytes": 5767,
+      "type": "file"
+    },
+    {
+      "mode": "0644",
+      "path": "references/job-lifecycle.md",
+      "sha256": "122117e7d56ca049b3ffbcb0f0b8bb74ac5e777e2184d24fcd3c2a3913f394d1",
+      "size_bytes": 4993,
+      "type": "file"
+    },
+    {
+      "mode": "0644",
+      "path": "references/model-independent.md",
+      "sha256": "0c65657b237af4fa83f23c8e4ab9216c935f6c4a134e8de1679a693da4ee5154",
+      "size_bytes": 4422,
+      "type": "file"
+    },
+    {
+      "mode": "0644",
+      "path": "references/official-links.md",
+      "sha256": "dace890812b64470e4f16761feb0915fbd44ab0b7e4c8540f3ebb34c066d0f78",
+      "size_bytes": 3986,
+      "type": "file"
+    },
+    {
+      "mode": "0644",
+      "path": "references/tools.md",
+      "sha256": "d7dc430d37a2e76e2f9e4c862a1b8b8556828827be316689221032a01e13d366",
+      "size_bytes": 2878,
+      "type": "file"
+    },
+    {
+      "mode": "0644",
+      "path": "references/validation.md",
+      "sha256": "b185852b6a6faed94fc8b048dc8da135784eda4541414e652b311f7065c9e153",
+      "size_bytes": 7104,
+      "type": "file"
+    },
+    {
+      "mode": "0644",
+      "path": "scripts/manifest.py",
+      "sha256": "aeeb97dba92099407c725071cafb35ade586145c4991f38b73587684e53426e9",
+      "size_bytes": 11316,
+      "type": "file"
+    },
+    {
+      "mode": "0644",
+      "path": "scripts/probe_ascend_runtime.py",
+      "sha256": "5af7f3aeb79982cacdba82f02113bc5b0e82e3f82c660175ef77bf2019fca8f8",
+      "size_bytes": 7851,
+      "type": "file"
+    },
+    {
+      "mode": "0644",
+      "path": "scripts/run_recorded.py",
+      "sha256": "0162d38f6ccf202ffe040cc4905291b61c99c11f626c0f7e2fe85ade14623a18",
+      "size_bytes": 5706,
+      "type": "file"
+    },
+    {
+      "mode": "0644",
+      "path": "scripts/scan_npu_risks.py",
+      "sha256": "761c88637a9a227ee8289d1200925989ecb10c25a7c150c22899c0dbab3ef1e1",
+      "size_bytes": 10229,
+      "type": "file"
+    },
+    {
+      "mode": "0644",
+      "path": "scripts/self_check.py",
+      "sha256": "dd6b3ec8ce7cdec55aa62e02957606a2b60e64db37480b930ec192a692258093",
+      "size_bytes": 7033,
+      "type": "file"
+    },
+    {
+      "mode": "0644",
+      "path": "scripts/ssh_script.py",
+      "sha256": "166178c59b5f3298669e10b9849d5db87fba2d4b99609476096a7be40805eee1",
+      "size_bytes": 5011,
+      "type": "file"
+    }
+  ],
+  "entry_count": 19,
+  "excludes": [
+    ".git",
+    "*/.git",
+    ".hg",
+    "*/.hg",
+    ".svn",
+    "*/.svn",
+    "__pycache__",
+    "*/__pycache__",
+    ".mypy_cache",
+    "*/.mypy_cache",
+    ".pytest_cache",
+    "*/.pytest_cache",
+    ".ruff_cache",
+    "*/.ruff_cache",
+    "*.pyc",
+    "*.pyo",
+    ".DS_Store",
+    "*/.DS_Store"
+  ],
+  "generated_at": "2026-09-15T09:27:30.533456Z",
+  "hash_algorithm": "sha256",
+  "root_name": "ascend-npu-porting-zh",
+  "schema_version": 1,
+  "total_file_bytes": 109731
+}

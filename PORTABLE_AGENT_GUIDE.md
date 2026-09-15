@@ -21,6 +21,12 @@ features, and representative inputs exist locally is part of the code/runtime
 contract; acquiring or moving them is a separate operation outside this
 toolkit unless the user explicitly requests it.
 
+For remote Bash execution, the bundled `scripts/ssh_script.py` additionally
+needs local Bash for syntax validation, a local SSH client, and target Bash. Read
+[references/ssh-execution.md](references/ssh-execution.md) for stdin/file and
+argument-array use. Its dry-run and the toolkit self-check do not connect to
+any target; they need no SSH credentials or NPU hardware.
+
 An agent without target access can prepare and statically check a patch bundle,
 but cannot truthfully claim runtime, training, serving, distributed, or
 performance readiness. Those claims require returned target evidence.
@@ -30,6 +36,12 @@ several coding-agent hosts, each with different skill discovery, shell access,
 permissions, context limits, and remote-execution support. Read
 [references/glm-agent.md](references/glm-agent.md) before delegating this
 workflow to GLM.
+
+To substantiate an independent-agent claim, also use
+[references/agent-validation.md](references/agent-validation.md). Record the
+actual GLM model and host, keep reviewer interventions visible, and validate a
+fresh replay. A run using a different host supports only that tested host;
+it does not establish execution on the user's GLM-only computer.
 
 ## Bootstrap on a new computer
 
@@ -49,7 +61,10 @@ python3 scripts/manifest.py verify /absolute/path/to/toolkit-manifest.json --roo
 ```
 
 The self-check proves package integrity and helper behavior without NPU
-hardware. It does not validate the target runtime or any model.
+hardware. If local Bash is unavailable, the core Python checks still run and
+`skipped_checks` identifies the unverified SSH helper and launcher syntax
+checks. A pass with those checks skipped does not verify SSH behavior. It does
+not validate the target runtime or any model.
 
 ## Prompt for any coding agent
 

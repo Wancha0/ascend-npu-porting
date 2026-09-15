@@ -21,6 +21,10 @@ must name ordinary shell commands, files, inputs, outputs, positive gates, and
 stop conditions. Product-specific metadata such as `agents/openai.yaml` is
 optional and must never be required for execution.
 
+If a command uses SSH, include the bundled `scripts/ssh_script.py` and
+[ssh-execution.md](ssh-execution.md) with its verified invocation. Do not point
+the receiving agent at a helper inside the author's home or skill directory.
+
 ## Prefer two rounds
 
 ### Round 1: discovery
@@ -124,6 +128,11 @@ Before delivery:
 `manifest.py` excludes common VCS metadata and caches by default. Additional
 project-specific build products or private paths still require explicit
 `--exclude` patterns and a manual disclosure review.
+
+For authorized source or patch delivery using encoded payloads, also perform
+the local decode and byte-for-byte verification in
+[ssh-execution.md](ssh-execution.md) before transfer. A passed source manifest
+does not validate hand-transcribed payloads or file-size assertions added later.
 
 At the destination, the runbook must verify the base revision and dirty state
 before applying patches. Use `git apply --check` before `git apply`. If the
