@@ -17,8 +17,8 @@
     {
       "mode": "0644",
       "path": "SKILL.md",
-      "sha256": "f087e53f2356d9a421e1a75befed4700eae9b7ebfb427635b86b0e7e040b74ff",
-      "size_bytes": 4280,
+      "sha256": "de9f2c59ae644913c7bbf034908ce95c8f23e5cd717342951a622fdd655025ce",
+      "size_bytes": 4872,
       "type": "file"
     },
     {
@@ -45,8 +45,8 @@
     {
       "mode": "0644",
       "path": "references/compatibility.md",
-      "sha256": "fc83c364982164b4f818cedc4b33e3ffd3a21d477f380d69a0247da195e3045f",
-      "size_bytes": 6269,
+      "sha256": "390f62e5f9377725e62df86c5aaaf7046874776401f56b41ada5b5f1cb88bbcc",
+      "size_bytes": 6489,
       "type": "file"
     },
     {
@@ -82,6 +82,13 @@
       "path": "references/modelarts-production.md",
       "sha256": "585c2bbd4c905e8303be15ef9b0c7d68b5b4ffe1ab14df2673a4b78dd102eeb0",
       "size_bytes": 9549,
+      "type": "file"
+    },
+    {
+      "mode": "0644",
+      "path": "references/numerical-precision.md",
+      "sha256": "fb96eb10b40fcf0ba679a4dcf36ab5c58d91af6238c13e2de6587b0bf3dab1cc",
+      "size_bytes": 5881,
       "type": "file"
     },
     {
@@ -155,7 +162,7 @@
       "type": "file"
     }
   ],
-  "entry_count": 22,
+  "entry_count": 23,
   "excludes": [
     ".git",
     "*/.git",
@@ -176,9 +183,9 @@
     ".DS_Store",
     "*/.DS_Store"
   ],
-  "generated_at": "2026-09-15T10:57:17.981795Z",
+  "generated_at": "2026-09-16T11:27:33.848175Z",
   "hash_algorithm": "sha256",
   "root_name": "toolkit-zh-release",
   "schema_version": 1,
-  "total_file_bytes": 118043
+  "total_file_bytes": 124736
 }

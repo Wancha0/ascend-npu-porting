@@ -20,6 +20,8 @@ description: 将 PyTorch 模型适配到昇腾 NPU，供 GPT 和 GLM 编码智�
 
 - 不静默修改模型、模态、冻结范围、数据划分、精度或有效 batch；参数调整按用户契约执行。
 - 优先保留平台 torch/torch_npu/CANN 组合；按真实设备类型路由，在框架判断设备前加载 torch_npu。
+- 模型能运行、输出有限或 loss 下降，不等于数值适配正确。分别记录权重、计算/autocast、输出/缓存精度；冻结编码器也需要真实输入的有界数值对照，复用同契约已有证据。
+- 特征提取与在线推理需核对预处理、算子实现及 batch。BF16 偏差不自动归因于 NPU；先区分低精度累积、平台算子和形状差异，不能把一种模型的补丁或误差阈值套给其他模型。
 - 有效更新需真实数据、loss、反向、同步及参数变化；调用 optimizer.step 或生成文件不足以证明成功。
 - 首个因果错误出现后先定位，再做最小修复；重试使用独立 attempt，保留失败记录。
 - 新增长训练或大规模提取前，按备份参考列出具体资产、目标和频率，让用户选择 OBS 范围；已有适用选择直接沿用，不将本地保存称为备份。
@@ -33,6 +35,7 @@ description: 将 PyTorch 模型适配到昇腾 NPU，供 GPT 和 GLM 编码智�
 | 陌生模型、追踪实际入口 | [模型契约](references/model-independent.md) |
 | 尽快打通真实训练、复用资产 | [快速训练](references/fast-training.md) |
 | 设备、算子、依赖、offload、多卡 | [兼容与修复](references/compatibility.md) |
+| 编码器精度、特征缓存、跨设备差异、效果下降 | [模型数值适配](references/numerical-precision.md) |
 | 真实更新、保存恢复、结果验收 | [模型验收](references/validation.md) |
 | SSH、进程、退出码、停止与重试 | [任务生命周期](references/job-lifecycle.md) |
 | Notebook 开发后提交生产作业 | [ModelArts 正式训练](references/modelarts-production.md) |
